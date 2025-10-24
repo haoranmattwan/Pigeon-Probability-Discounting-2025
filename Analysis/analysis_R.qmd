@@ -1,46 +1,64 @@
 ---
-title: "Discounting of Probabilistic Food Reinforcement by Pigeons"
+title: "Replication Code: Discounting of Probabilistic Food Reinforcement by Pigeons"
 author: "Haoran (Matt) Wan"
 date: "today"
 format: 
   html:
     toc: true
-    code-fold: true
+    code-fold: false
     self-contained: true
+    theme: cosmo
+    mainfont: "Garamond"
 engine: knitr
 ---
 
 ## Introduction
 
-This document contains the R code to replicate the analyses from the publication:
+This document contains the complete R code to replicate the analyses from the publication:
 
 > Oliveira, L., Green, L., Myerson, J., & Wan, H. (2025). Discounting of probabilistic food reinforcement by pigeons. *Journal of the Experimental Analysis of Behavior, 124*(1). https://doi.org/10.1002/jeab.70042
 
-The analysis uses Bayesian nonlinear multilevel models via `brms` to fit a hyperboloid discounting function to pigeons' choices. **Experiment 1** examines choices between a certain and a probabilistic reward. **Experiment 2** extends this to choices between two probabilistic rewards.
+The analysis uses Bayesian nonlinear multilevel models via `brms` to fit a hyperboloid discounting function to pigeons' choices. **Experiment 1** examines choices between a certain and a probabilistic reward.**Experiment 2** extends this to choices between two probabilistic rewards.
 
 The data for this study are publicly available on the Open Science Framework at: <https://osf.io/scwg3/>.
+
+This Quarto document is structured as follows:
+1.  **Setup**: Loads all required packages, sets global options, defines custom functions, and processes the raw data.
+2.  **Experiment 1**: Fits and visualizes the models for choices between certain and probabilistic rewards.
+3.  **Experiment 2**: Fits and visualizes the generalized models for choices between two probabilistic rewards.
 
 ```{r setup}
 #| message: false
 #| warning: false
 
-# --- Load All Packages ---
-library(minpack.lm)
-library(tidybayes)
-library(bayestestR)
-library(modelr)
-library(multcomp)
-library(glmmTMB)
-library(broom)
-library(lemon)
-library(brms)
-library(scales)
-library(ggpubr)
-library(here)
-library(readr)
-library(tidyverse)
+# This chunk sets up the global environment, loads all required packages,
+# and processes the raw data into analysis-ready dataframes.
 
-# --- Custom ggplot2 Theme ---
+# Set global chunk options to suppress all messages and warnings for a clean HTML output
+knitr::opts_chunk$set(message = FALSE, warning = FALSE, error = FALSE)
+
+# --- SETUP: PACKAGES, OPTIONS, AND FUNCTIONS ---
+
+# --- 1. LOAD PACKAGES ---
+library(minpack.lm) # For non-linear least squares (used in paper, though brms is primary)
+library(tidybayes)    # For processing and visualizing Bayesian model posteriors
+library(bayestestR)   # For calculating probability of direction (pd)
+library(modelr)       # For creating model-based data grids
+library(multcomp)     # For post-hoc comparisons
+library(glmmTMB)      # For frequentist mixed-effects models (e.g., AUC analysis)
+library(broom)        # For tidying model outputs
+library(lemon)        # For enhancing ggplot2 facets
+library(brms)         # For Bayesian multilevel modeling
+library(scales)       # For scaling plot axes
+library(ggpubr)       # For arranging ggplot objects
+library(here)         # For reproducible file paths
+library(readr)        # For reading CSV files
+library(tidyverse)    # For data manipulation and visualization (ggplot2, dplyr, etc.)
+
+# --- 2. CUSTOM FUNCTIONS & THEME ---
+
+#' Custom ggplot2 Theme for Publication-Ready Plots
+#' @description A standardized theme for consistent plot aesthetics.
 mattheme <- theme(
   text = element_text(size = 14, family = "Arial", color = "black", face = "bold"), 
   axis.text.y = element_text(colour = "black", size = 10, face = "bold"), 
@@ -56,135 +74,191 @@ mattheme <- theme(
   legend.key = element_blank()
 )
 
-# --- Area Under the Curve (AUC) Function ---
-auc <- function(x, y) {
+#' Area Under the Curve (AuC) Calculation
+#' @description Calculates the area under the curve using the trapezoidal rule.
+#' @param x A numeric vector of x-coordinates (e.g., normalized odds against).
+#' @param y A numeric vector of y-coordinates (e.g., relative subjective values).
+#' @return The calculated area as a single numeric value.
+calculate_AuC <- function(x, y) {
   sum(diff(x) * (y[-1] + y[-length(y)])) / 2
 }
 
-# --- Load OSF Data ---
-rawdat_exp1 <- read_csv("r code/OSF/PigeonPD_Exp1.csv")
-rawdat_exp2 <- read_csv("r code/OSF/PigeonPD_Exp2.csv")
+# --- 3. LOAD RAW DATA ---
+# Load the data files from the OSF repository folder.
+setwd(here::here())
+raw_data_exp1 <- read_csv("R code/OSF/PigeonPD_Exp1.csv")
+raw_data_exp2 <- read_csv("R code/OSF/PigeonPD_Exp2.csv")
 
-# --- Process Experiment 1 Data ---
-disc_dat_exp1 <- rawdat_exp1 |>
+# --- 4. PROCESS EXPERIMENT 1 DATA ---
+# Transform raw data into an analysis-ready format.
+processed_data_exp1 <- raw_data_exp1 |>
   mutate(
     Experiment = 1,
+    # Flag replication conditions
     Rep = as.numeric(str_detect(Probability, "R")),
-    Prob = as.numeric(str_remove(Probability, "R")) / 100,
-    odds = (1 - Prob) / Prob,
-    rsv = SV / Amount,
-    Multiplier = 1.0, # Placeholder for combining with Exp 2
-    odds_m = 0 # Odds against for the certain option is 0
+    # Convert probability to numeric (0-1)
+    Prob_Lg = as.numeric(str_remove(Probability, "R")) / 100,
+    # Calculate Odds Against (OAs)
+    OAs = (1 - Prob_Lg) / Prob_Lg,
+    # Calculate Relative Subjective Value (RSV)
+    RSV = SV / Amount,
+    # Set Multiplier to 1.0 (for consistency with Exp 2)
+    Multiplier = 1.0,
+    # Set Odds Against for the Smaller (certain) option to 0
+    OAs_Sm = 0
   ) |>
-  select(Subject, Experiment, Multiplier, Amount, Rep, odds, rsv, odds_m, Prob)
+  # Select and rename columns for clarity
+  select(Subject, Experiment, Multiplier, Amount, Rep, OAs, RSV, OAs_Sm, Prob_Lg)
 
-# --- Process Experiment 2 Data ---
-disc_dat_exp2 <- rawdat_exp2 |>
+# --- 5. PROCESS EXPERIMENT 2 DATA ---
+processed_data_exp2 <- raw_data_exp2 |>
   mutate(
     Experiment = 2,
+    # Flag replication conditions
     Rep = as.numeric(str_detect(Multiplier, "R")),
+    # Convert multiplier to numeric
     Multiplier = as.numeric(str_remove(Multiplier, "R")),
+    # Convert probabilities to numeric (0-1)
     Prob_Lg = Probability_Lg / 100,
     Prob_Sm = Probability_Sm / 100,
-    odds = (1 - Prob_Lg) / Prob_Lg,
-    odds_m = (1 - Prob_Sm) / Prob_Sm,
-    rsv = SV / Amount
+    # Calculate Odds Against (OAs) for both options
+    OAs = (1 - Prob_Lg) / Prob_Lg,
+    OAs_Sm = (1 - Prob_Sm) / Prob_Sm,
+    # Calculate Relative Subjective Value (RSV)
+    RSV = SV / Amount
   ) |>
-  select(Subject, Experiment, Multiplier, Amount, Rep, odds, rsv, odds_m, Prob = Prob_Lg)
+  # Select and rename columns for clarity
+  select(Subject, Experiment, Multiplier, Amount, Rep, OAs, RSV, OAs_Sm, Prob_Lg)
 
-# --- Combine Data and Create Mean Subject ---
-disc_dat <- bind_rows(disc_dat_exp1, disc_dat_exp2)
+# --- 6. COMBINE DATA & CREATE MEAN SUBJECT ---
+# Bind the two experiments into a single dataframe
+combined_data <- bind_rows(processed_data_exp1, processed_data_exp2)
 
-disc_mean <- disc_dat |>
-  filter(Rep == 0) |>
-  group_by(Experiment, Amount, Multiplier, odds, Prob, odds_m) |>
-  summarise(rsv = mean(rsv), .groups = 'drop') |>
-  mutate(Subject = "Mean", Rep = 0)
+# Calculate the mean RSV across all subjects for plotting
+mean_data <- combined_data |>
+  filter(Rep == 0) |> # Exclude replication data from mean calculation
+  group_by(Experiment, Amount, Multiplier, OAs, Prob_Lg, OAs_Sm) |>
+  summarise(RSV = mean(RSV), .groups = 'drop') |>
+  mutate(Subject = "Mean", Rep = 0) # Add a "Mean" subject
 
-disc_dat <- bind_rows(disc_dat, disc_mean) |>
-  mutate(Subject = factor(Subject, levels = c("P41","P42","P43","P44","P45","P46","P47","P48","Mean")))
+# Add the mean data back to the main dataframe
+combined_data <- bind_rows(combined_data, mean_data) |>
+  mutate(
+    # Re-order factor levels to place "Mean" at the end
+    Subject = factor(Subject, levels = c("P41","P42","P43","P44","P45","P46","P47","P48","Mean"))
+  )
 
-# --- Create Data for Plotting and AUC analysis ---
-dat_mean <- disc_dat |>
-  group_by(Subject, Experiment, Multiplier, Amount, Prob, Rep) |>
-  summarise_all(mean) |>
-  select(-odds_m) |>
+# --- 7. CREATE FINAL ANALYSIS DATAFRAMES ---
+
+# Create a dataframe for plotting (collapses across OAs)
+plot_data_mean <- combined_data |>
+  group_by(Subject, Experiment, Multiplier, Amount, Prob_Lg, Rep) |>
+  summarise_all(mean) |> # Get mean RSV for each condition
+  select(-OAs_Sm) |>
   ungroup() |>
   mutate(
+    # Convert Amount to a factor for plotting
     Amount = factor(Amount, levels = c(32, 16), labels = c("32 Pellets", "16 Pellets"))
   )
 
-auc_dat <- disc_dat |>
-  filter(Rep == 0) |>
+# Create a dataframe for AuC analysis
+auc_data <- combined_data |>
+  filter(Rep == 0) |> # Exclude replication data
   group_by(Subject, Experiment, Multiplier, Amount) |>
-  arrange(odds, .by_group = TRUE) |>
-  summarise(auc = auc(odds / max(odds), rsv), .groups = 'drop')
+  arrange(OAs, .by_group = TRUE) |> # Ensure OAs are in ascending order
+  # Calculate AuC, normalizing OAs to a 0-1 scale
+  summarise(AuC = calculate_AuC(OAs / max(OAs), RSV), .groups = 'drop')
 ```
-
----
 
 ## Experiment 1: Certain vs. Probabilistic Rewards
 
-In Experiment 1, pigeons chose between a smaller, certain reinforcer and a larger, probabilistic reinforcer[cite: 273]. The following section fits a hyperboloid discounting model to the data for each amount (16 and 32 pellets).
+In Experiment 1, pigeons chose between a smaller, certain reinforcer and a larger, probabilistic reinforcer. The following section fits the hyperboloid discounting model (Equation 1 from the paper) to the data for each amount (16 and 32 pellets).
 
-```{r exp1_models}
-#| cache: true
+```{r exp1_mod}
+#| message: false
+#| warning: false
 
-# --- Define and Fit Bayesian Nonlinear Models ---
-# The formula is logit-transformed to suit the beta distribution
-exp1_formula <- bf(rsv ~ log((1 / (1 + h*odds)^s) / (1 - (1 / (1 + h*odds)^s))),
-                   h + s ~ 0 + Subject, phi ~ 0 + Subject, nl = TRUE)
+setwd(here::here())
+# --- 1. Define Bayesian Nonlinear Model (Exp 1) ---
+# We fit the hyperboloid model: RSV = 1 / (1 + b * OAs)^s
+# We use a logit-transformed formula because the 'beta_family()' in brms
+# models the mean 'mu' on the logit scale: logit(mu) = eta.
+# Therefore, eta = logit(1 / (1 + b * OAs)^s)
+exp1_model_formula <- bf(
+  RSV ~ log((1 / (1 + b * OAs)^s) / (1 - (1 / (1 + b * OAs)^s))),
+  # 'b' (rate) and 's' (scaling) are non-linear parameters,
+  # estimated separately for each Subject.
+  b + s ~ 0 + Subject, 
+  # 'phi' (precision) is also estimated for each Subject.
+  phi ~ 0 + Subject, 
+  nl = TRUE
+)
 
-# Model for 16-pellet amount
-bf_mod1 <- brm(
-  formula = exp1_formula,
-  data = filter(disc_dat, Experiment == 1 & Rep == 0 & Amount == 16), 
+# --- 2. Set Priors ---
+# Priors are set based on the paper: normal(1, 10) for b and s.
+# We use weakly informative priors to help stabilize estimates.
+model_priors <- c(
+  prior(normal(1, 10), class = b, nlpar = b, lb = 0), # 'b' (rate)
+  prior(normal(1, 10), class = b, nlpar = s, lb = 0), # 's' (scaling)
+  prior(normal(0, 100^100), class = b, dpar = phi)    # 'phi' (precision)
+)
+
+# --- 3. Fit Model for 16-Pellet Amount ---
+model_exp1_16p <- brm(
+  formula = exp1_model_formula,
+  data = filter(combined_data, Experiment == 1 & Rep == 0 & Amount == 16), 
   family = beta_family(),
-  prior = c(prior(normal(1, 10), class = b, nlpar = h, lb = 0),
-            prior(normal(1, 10), class = b, nlpar = s, lb = 0),
-            prior(normal(0, 100^100), class = b, dpar = phi)),
+  prior = model_priors,
   iter = 4000, warmup = 2000, chains = 4, cores = 4, refresh = 0,
-  backend = "cmdstanr", control = list(adapt_delta=0.95, max_treedepth=10),
-  file = "bf_mod1.rds"
+  backend = "cmdstanr", 
+  control = list(adapt_delta = 0.95, max_treedepth = 10),
+  file = "R Code/01-13-25/Model/bf_mod1.rds" # Cache model fit
 )
 
-# Model for 32-pellet amount
-bf_mod2 <- brm(
-  formula = exp1_formula,
-  data = filter(disc_dat, Experiment == 1 & Rep == 0 & Amount == 32), 
+# --- 4. Fit Model for 32-Pellet Amount ---
+model_exp1_32p <- brm(
+  formula = exp1_model_formula,
+  data = filter(combined_data, Experiment == 1 & Rep == 0 & Amount == 32), 
   family = beta_family(),
-  prior = c(prior(normal(1, 10), class = b, nlpar = h, lb = 0),
-            prior(normal(1, 10), class = b, nlpar = s, lb = 0),
-            prior(normal(0, 100^100), class = b, dpar = phi)),
+  prior = model_priors,
   iter = 4000, warmup = 2000, chains = 4, cores = 4, refresh = 0,
-  backend = "cmdstanr", control = list(adapt_delta=0.95, max_treedepth=10),
-  file = "bf_mod2.rds"
+  backend = "cmdstanr", 
+  control = list(adapt_delta = 0.95, max_treedepth = 10),
+  file = "R Code/01-13-25/Model/bf_mod2.rds" # Cache model fit
 )
 
-# --- Generate Predictions from Posterior ---
-epred_newdat1 <- tidyr::expand(
-  ungroup(filter(disc_dat, Experiment == 1 & Rep == 0 & Amount == 16)),
-  Subject = unique(Subject), odds = seq(min(odds), max(odds), .1)
+# --- 5. Generate Predictions from Posterior ---
+# Create a grid of OAs values for each subject to draw smooth curves
+pred_grid_exp1_16p <- tidyr::expand(
+  ungroup(filter(combined_data, Experiment == 1 & Rep == 0 & Amount == 16)),
+  Subject = unique(Subject), 
+  OAs = seq(min(OAs), max(OAs), .1)
 )
-epred_newdat2 <- tidyr::expand(
-  ungroup(filter(disc_dat, Experiment == 1 & Rep == 0 & Amount == 32)),
-  Subject = unique(Subject), odds = seq(min(odds), max(odds), .1)
+pred_grid_exp1_32p <- tidyr::expand(
+  ungroup(filter(combined_data, Experiment == 1 & Rep == 0 & Amount == 32)),
+  Subject = unique(Subject), 
+  OAs = seq(min(OAs), max(OAs), .1)
 )
 
-epred_df <- add_epred_draws(bf_mod1, newdata = epred_newdat1) |>
-  group_by(Subject, odds) |>
+# Get posterior predictions and summarize using the median
+pred_curves_exp1 <- add_epred_draws(model_exp1_16p, newdata = pred_grid_exp1_16p) |>
+  group_by(Subject, OAs) |>
   summarize(.epred = median(.epred), Amount = "16 Pellets", .groups = 'drop') |>
+  # Bind with predictions from the 32-pellet model
   rbind(
-    add_epred_draws(bf_mod2, newdata = epred_newdat2) |>
-      group_by(Subject, odds) |>
+    add_epred_draws(model_exp1_32p, newdata = pred_grid_exp1_32p) |>
+      group_by(Subject, OAs) |>
       summarize(.epred = median(.epred), Amount = "32 Pellets", .groups = 'drop')
   )
 
-# --- Plot Data and Model Fits ---
-ggplot(filter(dat_mean, Experiment == 1 & Rep == 0), 
-       aes(odds, rsv, shape = Amount, group = Amount, linetype = Amount, fill = Amount, color = Amount)) +
-  geom_line(data = epred_df, aes(x = odds, y = .epred, group = Amount, linetype = Amount)) +
-  geom_point(data = filter(dat_mean, Experiment == 1 & Rep == 1), size = 3, fill = NA, show.legend = FALSE) +
+# --- 6. Plot Data and Model Fits (Replicates Figure 1) ---
+ggplot(filter(plot_data_mean, Experiment == 1 & Rep == 0), 
+       aes(OAs, RSV, shape = Amount, group = Amount, linetype = Amount, fill = Amount, color = Amount)) +
+  # Plot the smooth model-fit curves
+  geom_line(data = pred_curves_exp1, aes(x = OAs, y = .epred, group = Amount, linetype = Amount)) +
+  # Plot the replication data (open symbols)
+  geom_point(data = filter(plot_data_mean, Experiment == 1 & Rep == 1), size = 3, fill = NA, show.legend = FALSE) +
+  # Plot the original data (filled symbols)
   geom_point(size = 3) +
   scale_y_continuous(limits = c(-.005, 1.005), breaks = seq(0, 1, by = 0.2), expand = c(0,0)) +
   scale_x_continuous(limits = c(0, 10), breaks = seq(0, 10, by = 2)) +
@@ -199,38 +273,57 @@ ggplot(filter(dat_mean, Experiment == 1 & Rep == 0),
 
 ---
 
-```{r exp1_results}
-#| tbl-cap: "Table 1 Replication: AUC, R-squared, and Parameter Estimates for Experiment 1."
+The table below replicates the key findings from Table 1 in the paper, showing the AuC, Bayesian $R^2$, and posterior estimates for the discounting parameters *b* and *s*.
 
-# --- Bayesian R-squared ---
-cat("--- Experiment 1: Bayesian R-squared by Subject ---\n")
-r2_df <- cbind(filter(disc_dat, Experiment == 1 & Rep == 0  & Amount == 16), 
-               as.data.frame(t(posterior_epred(bf_mod1)))) |>
-  rbind(cbind(filter(disc_dat, Experiment == 1 & Rep == 0  & Amount == 32), 
-              as.data.frame(t(posterior_epred(bf_mod2))))) |>
+The plot replicates Figure 2, showing the difference in AuC between the 16- and 32-pellet conditions for each pigeon.
+
+
+```{r exp1_tab}
+#| message: false
+#| warning: false
+
+# --- 1. Calculate Bayesian R-squared ---
+# This approach calculates the variance in the median posterior predictions
+# relative to the variance in the observed data.
+r2_data_exp1 <- bind_rows(
+    # Get median posterior prediction for each data point
+    cbind(filter(combined_data, Experiment == 1 & Rep == 0 & Amount == 16), 
+          as.data.frame(t(posterior_epred(model_exp1_16p)))),
+    cbind(filter(combined_data, Experiment == 1 & Rep == 0 & Amount == 32), 
+          as.data.frame(t(posterior_epred(model_exp1_32p))))
+  ) |>
+  # Convert from wide (simulations) to long format
   pivot_longer(cols = starts_with("V"), names_to = "Sim", values_to = ".epred") |>
-  group_by(Subject, Amount, odds, rsv) |> 
+  # Find the median prediction for each observation
+  group_by(Subject, Amount, OAs, RSV) |> 
   summarize(.epred = median(.epred), .groups = 'drop') |>
-  mutate(residual = rsv - .epred) |>
+  mutate(residual = RSV - .epred) |>
+  # Calculate sum of squares
   group_by(Subject, Amount) |> 
-  mutate(residual2 = residual^2, tot = (rsv - mean(rsv))^2) |>
+  mutate(residual2 = residual^2, tot = (RSV - mean(RSV))^2) |>
   summarise(ss_res = sum(residual2), ss_tot = sum(tot), .groups = 'drop') |>
+  # Calculate R-squared
   mutate(R2 = 1 - (ss_res / ss_tot)) |> 
   select(Subject, Amount, R2)
 
-# --- Parameter Estimates Table ---
-cat("\n--- Experiment 1: Parameter Estimates by Subject ---\n")
-ranef_df <- gather_draws(bf_mod1, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 16) |>
-  rbind(gather_draws(bf_mod2, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 32)) |>
+# --- 2. Extract Parameter Estimates ---
+# Gather posterior draws for 'b' and 's' parameters from both models
+params_data_exp1 <- gather_draws(model_exp1_16p, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 16) |>
+  rbind(gather_draws(model_exp1_32p, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 32)) |>
+  # Clean variable names
   separate(col = .variable, into = c("Parameter", "Subject"), sep = "_Subject") |>
   mutate(Parameter = str_remove(Parameter, "b_")) |>
-  filter(Parameter != "phi") |> 
+  filter(Parameter != "phi") |> # Exclude precision parameter
+  # Calculate probability of direction (pd) relative to 1.0
   group_by(Subject, Amount, Parameter) |> 
   mutate(pd = ecdf(.value)(1), pd = ifelse(pd>=.5, pd, 1-pd)) |> 
+  # Summarize posteriors (median, sd)
   group_by(Parameter,Subject,Amount,pd) |> 
   summarise(se=sd(.value), .value=median(.value), .groups = 'drop') |>
-  mutate(pd = ifelse(Parameter=="h" & .value < 1 & pd > .5, 1 - pd,
+  # Correct pd direction based on paper's definition
+  mutate(pd = ifelse(Parameter=="b" & .value < 1 & pd > .5, 1 - pd,
                      ifelse(Parameter=="s" & .value > 1 & pd > .5, 1 - pd, pd))) |>
+  # Format for table
   mutate(across(c(.value, se, pd), ~sprintf("%.3f", round(.,3)))) |>
   ungroup() |> 
   mutate(se = paste0("(", se, ")")) |>
@@ -239,28 +332,34 @@ ranef_df <- gather_draws(bf_mod1, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount
   relocate(Parameter, Subject, Amount, 'Estimate (SE)') |>
   pivot_wider(names_from = Parameter, values_from = c(`Estimate (SE)`, pd))
 
-# --- Full Results Table ---
-full_tbl_exp1 <- full_join(filter(auc_dat, Experiment == 1), r2_df, by = c("Subject", "Amount")) |>
-  full_join(ranef_df, by = c("Subject", "Amount")) |>
+# --- 3. Create Full Results Table (Replicates Table 1) ---
+results_table_exp1 <- full_join(filter(auc_data, Experiment == 1), r2_data_exp1, by = c("Subject", "Amount")) |>
+  full_join(params_data_exp1, by = c("Subject", "Amount")) |>
+  # Order subjects as in the main dataframe
   mutate(Subject = factor(Subject, levels = c("P41","P42","P43","P44","P45","P46","P47","P48","Mean"))) |>
   arrange(Subject, Amount) |>
-  select(Subject, Amount, auc, R2, `Estimate (SE)_h`, pd_h, `Estimate (SE)_s`, pd_s) |>
-  rename("AuC" = "auc") |>
-  mutate(across(where(is.character), ~str_replace(., "0.", ".")))
+  # Select and rename columns
+  select(Subject, Amount, AuC, R2, `Estimate (SE)_b`, pd_b, `Estimate (SE)_s`, pd_s) |>
+  mutate(across(where(is.character), ~str_replace(., "0.", "."))) # Remove leading zeros
 
-print(as.data.frame(full_tbl_exp1))
+print(as.data.frame(results_table_exp1))
 
-# --- Test for Amount Effect on AUC ---
-cat("\n--- Experiment 1: Amount Effect on AUC ---\n")
-auc_mod_exp1 <- glmmTMB(auc ~ as.factor(Amount) + (1 | Subject), 
-                        family = beta_family(), 
-                        data = filter(auc_dat, Experiment == 1 & Subject != "Mean"))
-print(summary(auc_mod_exp1))
+# --- 4. Test for Amount Effect on AuC ---
+# Use a beta regression mixed-effects model to see if AuC differs by Amount
+cat("\n--- Experiment 1: Amount Effect on AuC ---\n")
+auc_model_exp1 <- glmmTMB(
+  AuC ~ as.factor(Amount) + (1 | Subject), 
+  family = beta_family(), 
+  data = filter(auc_data, Experiment == 1 & Subject != "Mean")
+)
+# No significant effect of amount was found
+print(summary(auc_model_exp1))
 
-# --- Plot Difference in AUC ---
-filter(auc_dat, Experiment == 1 & Subject != "Mean") |>
+# --- 5. Plot Difference in AuC (Replicates Figure 2) ---
+filter(auc_data, Experiment == 1 & Subject != "Mean") |>
   mutate(Subject = str_remove(Subject, "P")) |>
-  pivot_wider(names_from = Amount, values_from = auc) |>
+  pivot_wider(names_from = Amount, values_from = AuC) |>
+  # Calculate 16-pellet AuC minus 32-pellet AuC
   mutate(Diff_AuC = `16` - `32`) |>
   ggplot(aes(Subject, Diff_AuC)) +
   geom_hline(yintercept = 0, linetype = 2, color = "gray30") +
@@ -274,44 +373,64 @@ filter(auc_dat, Experiment == 1 & Subject != "Mean") |>
 
 ## Experiment 2: Two Probabilistic Rewards
 
-In Experiment 2, the probabilities of both options were reduced by a common multiplier (1.0, 0.75, or 0.25), creating choices where both outcomes were probabilistic. The analysis fits a generalized hyperboloid model to the data from each condition.
+In Experiment 2, the probabilities of both options were reduced by a common multiplier (1.0, 0.75, or 0.25), creating choices where both outcomes were probabilistic. The analysis fits a generalized hyperboloid model (Equation 2 from the paper) to the data from each condition.
 
-```{r exp2_models}
-#| cache: true
 
-# --- Define and Fit Bayesian Nonlinear Models for Experiment 2 ---
-exp2_formula <- bf(rsv ~ log((((1+h*odds_m)^s) / ((1+h*odds)^s)) / (1 - (((1+h*odds_m)^s) / ((1+h*odds)^s)))),
-                   h + s ~ 0 + Subject, phi ~ 0 + Subject, nl = TRUE)
+```{r exp2_mod}
+#| message: false
+#| warning: false
 
-fit_brm_exp2 <- function(data_filter, file_name) {
+setwd(here::here())
+# --- 1. Define Bayesian Nonlinear Model (Exp 2) ---
+# This is the generalized hyperboloid model (Equation 2):
+# RSV = ((1 + b * OAs_Sm)^s) / ((1 + b * OAs)^s)
+# We again use the logit-transformed version for beta regression.
+exp2_model_formula <- bf(
+  RSV ~ log((((1 + b * OAs_Sm)^s) / ((1 + b * OAs)^s)) / (1 - (((1 + b * OAs_Sm)^s) / ((1 + b * OAs)^s)))),
+  b + s ~ 0 + Subject, 
+  phi ~ 0 + Subject, 
+  nl = TRUE
+)
+
+# --- 2. Create a Wrapper Function to Fit Models ---
+# This function avoids repeating the brm call 6 times.
+fit_brm_model_exp2 <- function(data_filter, file_name) {
   brm(
-    formula = exp2_formula,
+    formula = exp2_model_formula,
     data = data_filter,
     family = beta_family(),
-    prior = c(prior(normal(1, 10), class = b, nlpar = h, lb = 0),
-              prior(normal(1, 10), class = b, nlpar = s, lb = 0),
-              prior(normal(0, 100^100), class = b, dpar = phi)),
+    prior = model_priors, # Using the same priors as Exp 1
     iter = 4000, warmup = 2000, chains = 4, cores = 4, refresh = 0,
-    backend = "cmdstanr", control = list(adapt_delta=0.99, max_treedepth=15),
+    backend = "cmdstanr", 
+    control = list(adapt_delta = 0.99, max_treedepth = 15), # Stricter controls
     file = file_name
   )
 }
 
-exp2_data <- filter(disc_dat, Experiment == 2 & Rep == 0)
+# --- 3. Fit All 6 Models for Experiment 2 ---
+filtered_data_exp2 <- filter(combined_data, Experiment == 2 & Rep == 0)
 
-bf_mod3a <- fit_brm_exp2(filter(exp2_data, Amount == 16, Multiplier == 1.00), "bf_mod3a.rds")
-bf_mod3b <- fit_brm_exp2(filter(exp2_data, Amount == 16, Multiplier == 0.75), "bf_mod3b.rds")
-bf_mod3c <- fit_brm_exp2(filter(exp2_data, Amount == 16, Multiplier == 0.25), "bf_mod3c.rds")
-bf_mod4a <- fit_brm_exp2(filter(exp2_data, Amount == 32, Multiplier == 1.00), "bf_mod4a.rds")
-bf_mod4b <- fit_brm_exp2(filter(exp2_data, Amount == 32, Multiplier == 0.75), "bf_mod4b.rds")
-bf_mod4c <- fit_brm_exp2(filter(exp2_data, Amount == 32, Multiplier == 0.25), "bf_mod4c.rds")
+# 16-Pellet Models
+model_exp2_16p_m100 <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 16, Multiplier == 1.00), "R Code/01-13-25/Model/bf_mod3a.rds")
+model_exp2_16p_m75  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 16, Multiplier == 0.75), "R Code/01-13-25/Model/bf_mod3b.rds")
+model_exp2_16p_m25  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 16, Multiplier == 0.25), "R Code/01-13-25/Model/bf_mod3c.rds")
+
+# 32-Pellet Models
+model_exp2_32p_m100 <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 32, Multiplier == 1.00), "R Code/01-13-25/Model/bf_mod4a.rds")
+model_exp2_32p_m75  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 32, Multiplier == 0.75), "R Code/01-13-25/Model/bf_mod4b.rds")
+model_exp2_32p_m25  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 32, Multiplier == 0.25), "R Code/01-13-25/Model/bf_mod4c.rds")
 ```
 
-```{r exp2_plots}
-#| fig-cap: "Mean relative subjective value as a function of relative odds against for Experiment 2, faceted by multiplier."
+---
 
-# --- Generate Predictions from Posterior for all 6 models ---
-gen_epred <- function(model, data_filter) {
+The plots below replicate Figures 3, 4, and 5 from the paper, showing the discounting curves for each of the three multiplier conditions. The x-axis is "Relative Odds Against," which is the odds against for the larger, less probable option.
+
+```{r exp2_fig}
+#| message: false
+#| warning: false
+
+# --- 1. Create a Wrapper Function for Predictions ---
+generate_pred_curves_exp2 <- function(model, data_filter) {
   # Remove unused factor levels (like P47) from the filtered data
   data_filter <- droplevels(data_filter)
   
@@ -319,52 +438,61 @@ gen_epred <- function(model, data_filter) {
   new_data <- tidyr::expand(
     data_filter,
     nesting(Subject), # Use nesting to ensure only valid subjects are used
-    nesting(odds_m),
-    odds = seq(min(odds), max(odds), .1)
+    nesting(OAs_Sm),
+    OAs = seq(min(OAs), max(OAs), .1)
   )
   
   # Generate and summarize posterior predictions
   add_epred_draws(model, newdata = new_data) |>
-    group_by(Subject, odds) |>
+    group_by(Subject, OAs) |>
     summarize(.epred = median(.epred), .groups = 'drop') |>
     mutate(Amount = unique(data_filter$Amount), Multiplier = unique(data_filter$Multiplier))
 }
 
-exp2_data <- filter(disc_dat, Experiment == 2 & Rep == 0)
-epred_df2 <- bind_rows(
-  gen_epred(bf_mod3a, filter(exp2_data, Amount == 16, Multiplier == 1.00)),
-  gen_epred(bf_mod3b, filter(exp2_data, Amount == 16, Multiplier == 0.75)),
-  gen_epred(bf_mod3c, filter(exp2_data, Amount == 16, Multiplier == 0.25)),
-  gen_epred(bf_mod4a, filter(exp2_data, Amount == 32, Multiplier == 1.00)),
-  gen_epred(bf_mod4b, filter(exp2_data, Amount == 32, Multiplier == 0.75)),
-  gen_epred(bf_mod4c, filter(exp2_data, Amount == 32, Multiplier == 0.25))
+# --- 2. Generate Predictions for all 6 Models ---
+filtered_data_exp2 <- filter(combined_data, Experiment == 2 & Rep == 0)
+
+pred_curves_exp2 <- bind_rows(
+  generate_pred_curves_exp2(model_exp2_16p_m100, filter(filtered_data_exp2, Amount == 16, Multiplier == 1.00)),
+  generate_pred_curves_exp2(model_exp2_16p_m75,  filter(filtered_data_exp2, Amount == 16, Multiplier == 0.75)),
+  generate_pred_curves_exp2(model_exp2_16p_m25,  filter(filtered_data_exp2, Amount == 16, Multiplier == 0.25)),
+  generate_pred_curves_exp2(model_exp2_32p_m100, filter(filtered_data_exp2, Amount == 32, Multiplier == 1.00)),
+  generate_pred_curves_exp2(model_exp2_32p_m75,  filter(filtered_data_exp2, Amount == 32, Multiplier == 0.75)),
+  generate_pred_curves_exp2(model_exp2_32p_m25,  filter(filtered_data_exp2, Amount == 32, Multiplier == 0.25))
 ) |>
   mutate(
-    prob = 1 / (odds + 1),
-    common_prob = prob / Multiplier,
-    common_odds = (1 - common_prob) / common_prob,
+    # Calculate the "Relative Odds Against" for the x-axis
+    # This corresponds to the odds against in the 1.0 Multiplier condition
+    Prob_Lg = 1 / (OAs + 1),
+    Rel_Prob = Prob_Lg / Multiplier,
+    Rel_OAs = (1 - Rel_Prob) / Rel_Prob,
+    # Create labels for faceting
     Multiplier_Label = factor(Multiplier, levels = c("1","0.75","0.25"), 
                               labels = c("Multiplier 1.0","Multiplier 0.75","Multiplier 0.25")),
     Amount = factor(Amount, levels = c(32, 16), labels = c("32 Pellets", "16 Pellets"))
   )
 
-# --- Prep Plotting Data ---
-plot_dat_exp2 <- filter(dat_mean, Experiment == 2) |>
+# --- 3. Prep Plotting Data ---
+plot_data_exp2 <- filter(plot_data_mean, Experiment == 2) |>
   mutate(
-    common_prob = Prob / Multiplier, # Already the 'common' probability from source script
-    common_odds = (1 - common_prob) / common_prob,
+    # Calculate "Relative Odds Against" for the observed data points
+    Rel_Prob = Prob_Lg / Multiplier,
+    Rel_OAs = (1 - Rel_Prob) / Rel_Prob,
     Multiplier_Label = factor(Multiplier, levels = c("1","0.75","0.25"), 
                               labels = c("Multiplier 1.0","Multiplier 0.75","Multiplier 0.25"))
   )
 
-# --- Generate Plots for Each Multiplier ---
-plot_exp2_facet <- function(mult_label) {
-  ggplot(filter(plot_dat_exp2, Rep == 0, Multiplier_Label == mult_label),
-         aes(common_odds, rsv, shape = Amount, group = Amount, linetype = Amount, fill = Amount, color = Amount)) +
-    geom_line(data = filter(epred_df2, Multiplier_Label == mult_label), 
-              aes(x = common_odds, y = .epred)) +
-    geom_point(data = filter(plot_dat_exp2, Rep == 1, Multiplier_Label == mult_label),
+# --- 4. Create Faceted Plotting Function ---
+plot_exp2_by_multiplier <- function(mult_label) {
+  ggplot(filter(plot_data_exp2, Rep == 0, Multiplier_Label == mult_label),
+         aes(Rel_OAs, RSV, shape = Amount, group = Amount, linetype = Amount, fill = Amount, color = Amount)) +
+    # Plot the smooth model-fit curves
+    geom_line(data = filter(pred_curves_exp2, Multiplier_Label == mult_label), 
+              aes(x = Rel_OAs, y = .epred)) +
+    # Plot the replication data (open symbols)
+    geom_point(data = filter(plot_data_exp2, Rep == 1, Multiplier_Label == mult_label),
                size = 5, fill = NA, show.legend = FALSE) +
+    # Plot the original data (filled symbols)
     geom_point(size = 3) +
     scale_y_continuous(limits = c(-.005, 1.005), breaks = seq(0,1,by=0.2), expand = c(0,0)) +
     scale_x_continuous(limits = c(0, 4.2), breaks= seq(0,4,by=1)) +
@@ -377,44 +505,49 @@ plot_exp2_facet <- function(mult_label) {
     theme_bw() + mattheme
 }
 
-print(plot_exp2_facet("Multiplier 1.0"))
-print(plot_exp2_facet("Multiplier 0.75"))
-print(plot_exp2_facet("Multiplier 0.25"))
+# --- 5. Generate Plots (Replicates Figures 3, 4, 5) ---
+print(plot_exp2_by_multiplier("Multiplier 1.0"))
+print(plot_exp2_by_multiplier("Multiplier 0.75"))
+print(plot_exp2_by_multiplier("Multiplier 0.25"))
 ```
 
+---
 
-```{r exp2_results}
-#| tbl-cap: "Table 2 Replication: AUC, R-squared, and Parameter Estimates for Experiment 2."
+The table below replicates the key findings from Table 2 in the paper, showing AuC, $R^2$, and parameter estimates for Experiment 2, broken down by multiplier condition.
 
-# --- Bayesian R-squared ---
-cat("--- Experiment 2: Bayesian R-squared by Subject, Amount, and Multiplier ---\n")
-r2_df2 <- bind_rows(
-  cbind(filter(exp2_data, Amount == 16, Multiplier == 1.00), as.data.frame(t(posterior_epred(bf_mod3a)))),
-  cbind(filter(exp2_data, Amount == 32, Multiplier == 1.00), as.data.frame(t(posterior_epred(bf_mod4a)))),
-  cbind(filter(exp2_data, Amount == 16, Multiplier == 0.75), as.data.frame(t(posterior_epred(bf_mod3b)))),
-  cbind(filter(exp2_data, Amount == 32, Multiplier == 0.75), as.data.frame(t(posterior_epred(bf_mod4b)))),
-  cbind(filter(exp2_data, Amount == 16, Multiplier == 0.25), as.data.frame(t(posterior_epred(bf_mod3c)))),
-  cbind(filter(exp2_data, Amount == 32, Multiplier == 0.25), as.data.frame(t(posterior_epred(bf_mod4c))))
+
+```{r exp2_tab}
+#| message: false
+#| warning: false
+
+# --- 1. Calculate Bayesian R-squared ---
+filtered_data_exp2 <- filter(combined_data, Experiment == 2 & Rep == 0)
+r2_data_exp2 <- bind_rows(
+  cbind(filter(filtered_data_exp2, Amount == 16, Multiplier == 1.00), as.data.frame(t(posterior_epred(model_exp2_16p_m100)))),
+  cbind(filter(filtered_data_exp2, Amount == 32, Multiplier == 1.00), as.data.frame(t(posterior_epred(model_exp2_32p_m100)))),
+  cbind(filter(filtered_data_exp2, Amount == 16, Multiplier == 0.75), as.data.frame(t(posterior_epred(model_exp2_16p_m75)))),
+  cbind(filter(filtered_data_exp2, Amount == 32, Multiplier == 0.75), as.data.frame(t(posterior_epred(model_exp2_32p_m75)))),
+  cbind(filter(filtered_data_exp2, Amount == 16, Multiplier == 0.25), as.data.frame(t(posterior_epred(model_exp2_16p_m25)))),
+  cbind(filter(filtered_data_exp2, Amount == 32, Multiplier == 0.25), as.data.frame(t(posterior_epred(model_exp2_32p_m25))))
 ) |>
   pivot_longer(cols = starts_with("V"), names_to = "Sim", values_to = ".epred") |>
-  group_by(Multiplier, Subject, Amount, odds, rsv) |> 
+  group_by(Multiplier, Subject, Amount, OAs, RSV) |> 
   summarize(.epred = median(.epred), .groups = 'drop') |>
-  mutate(residual = rsv - .epred) |>
+  mutate(residual = RSV - .epred) |>
   group_by(Multiplier, Subject, Amount) |> 
-  mutate(residual2 = residual^2, tot = (rsv - mean(rsv))^2) |>
+  mutate(residual2 = residual^2, tot = (RSV - mean(RSV))^2) |>
   summarise(ss_res = sum(residual2), ss_tot = sum(tot), .groups = 'drop') |>
-  mutate(R2 = 1 - (ss_res / ss_tot), R2 = ifelse(R2 < 0, NA, R2)) |> 
+  mutate(R2 = 1 - (ss_res / ss_tot), R2 = ifelse(R2 < 0, NA, R2)) |> # Set negative R2 to NA
   select(-ss_res, -ss_tot)
 
-# --- Parameter Estimates Table ---
-cat("\n--- Experiment 2: Parameter Estimates by Subject, Amount, and Multiplier ---\n")
-ranef_df2 <- bind_rows(
-  gather_draws(bf_mod3a, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 16, Multiplier = 1.00),
-  gather_draws(bf_mod3b, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 16, Multiplier = 0.75),
-  gather_draws(bf_mod3c, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 16, Multiplier = 0.25),
-  gather_draws(bf_mod4a, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 32, Multiplier = 1.00),
-  gather_draws(bf_mod4b, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 32, Multiplier = 0.75),
-  gather_draws(bf_mod4c, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 32, Multiplier = 0.25)
+# --- 2. Extract Parameter Estimates ---
+params_data_exp2 <- bind_rows(
+  gather_draws(model_exp2_16p_m100, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 16, Multiplier = 1.00),
+  gather_draws(model_exp2_16p_m75,  `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 16, Multiplier = 0.75),
+  gather_draws(model_exp2_16p_m25,  `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 16, Multiplier = 0.25),
+  gather_draws(model_exp2_32p_m100, `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 32, Multiplier = 1.00),
+  gather_draws(model_exp2_32p_m75,  `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 32, Multiplier = 0.75),
+  gather_draws(model_exp2_32p_m25,  `b_.*`, regex=TRUE)[,-c(1:3)] |> mutate(Amount = 32, Multiplier = 0.25)
 ) |>
   separate(col = .variable, into = c("Parameter", "Subject"), sep = "_Subject") |>
   mutate(Parameter = str_remove(Parameter, "b_")) |>
@@ -423,7 +556,7 @@ ranef_df2 <- bind_rows(
   mutate(pd = ecdf(.value)(1), pd = ifelse(pd >= .5, pd, 1 - pd)) |> 
   group_by(Parameter, Multiplier, Subject, Amount, pd) |> 
   summarise(se = sd(.value), .value = median(.value), .groups = 'drop') |>
-  mutate(pd = ifelse(Parameter == "h" & .value < 1 & pd > .5, 1 - pd,
+  mutate(pd = ifelse(Parameter == "b" & .value < 1 & pd > .5, 1 - pd,
                      ifelse(Parameter == "s" & .value > 1 & pd > .5, 1 - pd, pd))) |>
   mutate(across(c(.value, se, pd), ~sprintf("%.3f", round(.,3)))) |>
   ungroup() |> mutate(se = paste0("(", se, ")")) |>
@@ -432,25 +565,31 @@ ranef_df2 <- bind_rows(
   relocate(Parameter, Multiplier, Subject, Amount, 'Estimate (SE)') |>
   pivot_wider(names_from = Parameter, values_from = c(`Estimate (SE)`, pd))
 
-# --- Full Results Table ---
-full_tbl_exp2 <- full_join(filter(auc_dat, Experiment == 2), r2_df2, by = c("Subject", "Amount", "Multiplier")) |>
-  full_join(ranef_df2, by = c("Subject", "Multiplier", "Amount")) |>
+# --- 3. Create Full Results Table (Replicates Table 2) ---
+results_table_exp2 <- full_join(filter(auc_data, Experiment == 2), r2_data_exp2, by = c("Subject", "Amount", "Multiplier")) |>
+  full_join(params_data_exp2, by = c("Subject", "Multiplier", "Amount")) |>
   mutate(Subject = factor(Subject, levels = c("P41","P42","P43","P44","P45","P46","P47","P48","Mean"))) |>
+  # Order by multiplier, then subject, then amount
   arrange(desc(Multiplier), Subject, Amount) |>
-  select(Multiplier, Subject, Amount, auc, R2, `Estimate (SE)_h`, pd_h, `Estimate (SE)_s`, pd_s) |>
-  rename("AuC" = "auc") |>
-  mutate(across(where(is.character), ~replace_na(., "")))
+  select(Multiplier, Subject, Amount, AuC, R2, `Estimate (SE)_b`, pd_b, `Estimate (SE)_s`, pd_s) |>
+  mutate(across(where(is.character), ~replace_na(., ""))) # Replace NA with blank string for table
 
-print(as.data.frame(full_tbl_exp2))
+print(as.data.frame(results_table_exp2))
 
-# --- Test for Amount Effect on AUC ---
-cat("\n--- Experiment 2: Amount Effect on AUC by Multiplier ---\n")
-auc_dat_exp2 <- filter(auc_dat, Experiment == 2 & Subject != "Mean")
+# --- 4. Test for Amount Effect on AuC (by Multiplier) ---
+# As in Exp 1, we test for an amount effect, but now separately
+# for each multiplier condition.
+cat("\n--- Experiment 2: Amount Effect on AuC by Multiplier ---\n")
+auc_data_exp2 <- filter(auc_data, Experiment == 2 & Subject != "Mean")
+# Loop through each multiplier
 for (m in c(1.0, 0.75, 0.25)) {
   cat(paste("\nMultiplier:", m, "\n"))
-  mod <- glmmTMB(auc ~ as.factor(Amount) + (1 | Subject), 
-                 family = beta_family(), 
-                 data = filter(auc_dat_exp2, Multiplier == m))
+  mod <- glmmTMB(
+    AuC ~ as.factor(Amount) + (1 | Subject), 
+    family = beta_family(), 
+    data = filter(auc_data_exp2, Multiplier == m)
+  )
+  # No significant effect of amount was found in any condition
   print(summary(mod))
 }
 ```
