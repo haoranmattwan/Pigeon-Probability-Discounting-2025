@@ -49,6 +49,7 @@ library(glmmTMB)      # For frequentist mixed-effects models (e.g., AUC analysis
 library(broom)        # For tidying model outputs
 library(lemon)        # For enhancing ggplot2 facets
 library(brms)         # For Bayesian multilevel modeling
+library(rstan)        # For Bayesian multilevel modeling
 library(scales)       # For scaling plot axes
 library(ggpubr)       # For arranging ggplot objects
 library(here)         # For reproducible file paths
@@ -141,13 +142,6 @@ mean_data <- combined_data |>
   summarise(RSV = mean(RSV), .groups = 'drop') |>
   mutate(Subject = "Mean", Rep = 0) # Add a "Mean" subject
 
-# Add the mean data back to the main dataframe
-combined_data <- bind_rows(combined_data, mean_data) |>
-  mutate(
-    # Re-order factor levels to place "Mean" at the end
-    Subject = factor(Subject, levels = c("P41","P42","P43","P44","P45","P46","P47","P48","Mean"))
-  )
-
 # --- 7. CREATE FINAL ANALYSIS DATAFRAMES ---
 
 # Create a dataframe for plotting (collapses across OAs)
@@ -185,7 +179,7 @@ setwd(here::here())
 # models the mean 'mu' on the logit scale: logit(mu) = eta.
 # Therefore, eta = logit(1 / (1 + b * OAs)^s)
 exp1_model_formula <- bf(
-  RSV ~ log((1 / (1 + b * OAs)^s) / (1 - (1 / (1 + b * OAs)^s))),
+  RSV ~ log((1 / (1 + b*OAs)^s) / (1 - (1 / (1 + b*OAs)^s))),
   # 'b' (rate) and 's' (scaling) are non-linear parameters,
   # estimated separately for each Subject.
   b + s ~ 0 + Subject, 
