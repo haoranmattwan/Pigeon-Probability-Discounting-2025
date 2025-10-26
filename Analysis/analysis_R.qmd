@@ -314,7 +314,6 @@ params_data_exp1 <- gather_draws(model_exp1_16p, `b_.*`, regex=TRUE)[,-c(1:3)] |
   # Summarize posteriors (median, sd)
   group_by(Parameter,Subject,Amount,pd) |> 
   summarise(se=sd(.value), .value=median(.value), .groups = 'drop') |>
-  # Correct pd direction based on paper's definition
   mutate(pd = ifelse(Parameter=="b" & .value < 1 & pd > .5, 1 - pd,
                      ifelse(Parameter=="s" & .value > 1 & pd > .5, 1 - pd, pd))) |>
   # Format for table
