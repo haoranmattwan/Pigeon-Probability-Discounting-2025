@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.7.32">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+
+<title>Discounting of Probabilistic Food Reinforcement by Pigeons</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="analysis_Py_files/libs/clipboard/clipboard.min.js"></script>
+<script src="analysis_Py_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="analysis_Py_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="analysis_Py_files/libs/quarto-html/popper.min.js"></script>
+<script src="analysis_Py_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="analysis_Py_files/libs/quarto-html/anchor.min.js"></script>
+<link href="analysis_Py_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="analysis_Py_files/libs/quarto-html/quarto-syntax-highlighting-37eea08aefeeee20ff55810ff984fec1.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="analysis_Py_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="analysis_Py_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="analysis_Py_files/libs/bootstrap/bootstrap-81267100e462c21b3d6c0d5bf76a3417.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="fullcontent quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Discounting of Probabilistic Food Reinforcement by Pigeons</h1>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<p>This notebook provides a complete Python-based replication of the analyses from the publication:</p>
+<blockquote class="blockquote">
+<p>Oliveira, L., Green, L., Myerson, J., &amp; Wan, H. (2025). Discounting of probabilistic food reinforcement by pigeons. <em>Journal of the Experimental Analysis of Behavior, 124</em>(1). https://doi.org/10.1002/jeab.70042</p>
+</blockquote>
+<p>The original R analysis (<code>brms</code>) is translated into a Python workflow using <code>pandas</code>, <code>pymc</code>, <code>arviz</code>, and <code>matplotlib</code>. The analysis uses Bayesian nonlinear multilevel models to fit a hyperboloid discounting function to pigeons’ choices.</p>
+<p>The data for this study are publicly available on the Open Science Framework at: <a href="https://osf.io/scwg3/" class="uri">https://osf.io/scwg3/</a>.</p>
+<section id="workflow-overview" class="level3">
+<h3 class="anchored" data-anchor-id="workflow-overview">Workflow Overview</h3>
+<ol type="1">
+<li><strong>Setup</strong>: Imports all necessary Python libraries and defines a custom plotting theme.</li>
+<li><strong>Data Processing</strong>: Loads the raw data from both experiments, cleans and transforms it, and calculates the Area under the Curve (AuC) for each subject and condition.</li>
+<li><strong>Experiment 1</strong>:
+<ul>
+<li>Fits a Bayesian multilevel hyperboloid model to the “certain vs.&nbsp;probabilistic” choice data.</li>
+<li>Visualizes the model fits (Figure 1 replication).</li>
+<li>Calculates Bayesian <span class="math inline">\(R^2\)</span> and replicates the AuC analysis (Table 1 &amp; Figure 2 replication).</li>
+</ul></li>
+<li><strong>Experiment 2</strong>:
+<ul>
+<li>Fits the generalized hyperboloid model to the “probabilistic vs.&nbsp;probabilistic” choice data for all 6 conditions.</li>
+<li>Visualizes the model fits (Figures 3-5 replication).</li>
+<li>Calculates Bayesian <span class="math inline">\(R^2\)</span> and replicates the AuC analysis (Table 2 replication).</li>
+</ul></li>
+</ol>
+<div id="e5617ac7" class="cell" data-execution_count="11">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 1. Environment Setup ---</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># This cell installs all the required Python packages.</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="co"># It is commented out by default. Uncomment and run this cell if the packages </span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="co"># are not yet installed in your environment.</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="co"># import sys</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="co"># !{sys.executable} -m pip install pandas numpy pymc arviz matplotlib seaborn scikit-learn openpyxl statsmodels jupyter</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<div id="f990c31e" class="cell" data-execution_count="12">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 2. Imports, Settings, and Helper Functions ---</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Core Libraries ---</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> warnings</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> statsmodels.api <span class="im">as</span> sm</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> statsmodels.formula.api <span class="im">as</span> smf</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Modeling ---</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pymc <span class="im">as</span> pm</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> arviz <span class="im">as</span> az</span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> sklearn.metrics <span class="im">import</span> auc <span class="im">as</span> calculate_trapezoid_auc</span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Visualization ---</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Global Settings ---</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># Suppress warnings for a cleaner notebook output</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>warnings.filterwarnings(<span class="st">'ignore'</span>)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a><span class="co"># Standardize float display format</span></span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>pd.options.display.float_format <span class="op">=</span> <span class="st">'</span><span class="sc">{:.3f}</span><span class="st">'</span>.<span class="bu">format</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Custom function ---</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Define plot theme</span></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> style_plot(ax: plt.Axes, title: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>):</span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a><span class="co">    Applies a consistent, publication-quality theme to a Matplotlib axes object.</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a><span class="co">    Args:</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a><span class="co">        ax (matplotlib.axes.Axes): The axes object to style.</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a><span class="co">        title (str): The title for the plot.</span></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>    ax.set_title(title, fontsize<span class="op">=</span><span class="dv">16</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>    ax.set_xlabel(ax.get_xlabel(), fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>    ax.set_ylabel(ax.get_ylabel(), fontsize<span class="op">=</span><span class="dv">14</span>, fontweight<span class="op">=</span><span class="st">'bold'</span>)</span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>    ax.tick_params(axis<span class="op">=</span><span class="st">'both'</span>, which<span class="op">=</span><span class="st">'major'</span>, labelsize<span class="op">=</span><span class="dv">10</span>, direction<span class="op">=</span><span class="st">'out'</span>)</span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> spine <span class="kw">in</span> ax.spines.values():</span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>        spine.set_edgecolor(<span class="st">'black'</span>)</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a>        spine.set_linewidth(<span class="dv">1</span>)</span>
+<span id="cb2-43"><a href="#cb2-43" aria-hidden="true" tabindex="-1"></a>    ax.set_facecolor(<span class="st">'white'</span>)</span>
+<span id="cb2-44"><a href="#cb2-44" aria-hidden="true" tabindex="-1"></a>    ax.grid(<span class="va">False</span>)</span>
+<span id="cb2-45"><a href="#cb2-45" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> ax.get_legend():</span>
+<span id="cb2-46"><a href="#cb2-46" aria-hidden="true" tabindex="-1"></a>        ax.get_legend().set_frame_on(<span class="va">False</span>)</span>
+<span id="cb2-47"><a href="#cb2-47" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-48"><a href="#cb2-48" aria-hidden="true" tabindex="-1"></a><span class="co"># Define AuC for a group</span></span>
+<span id="cb2-49"><a href="#cb2-49" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> calculate_auc_group(df: pd.DataFrame) <span class="op">-&gt;</span> <span class="bu">float</span>:</span>
+<span id="cb2-50"><a href="#cb2-50" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Helper function to calculate AuC for a group."""</span></span>
+<span id="cb2-51"><a href="#cb2-51" aria-hidden="true" tabindex="-1"></a>    df <span class="op">=</span> df.sort_values(<span class="st">'OAs'</span>)</span>
+<span id="cb2-52"><a href="#cb2-52" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Normalize OAs to a 0-1 scale for AuC calculation</span></span>
+<span id="cb2-53"><a href="#cb2-53" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add 0,0 point to anchor the curve if min OAs is not 0</span></span>
+<span id="cb2-54"><a href="#cb2-54" aria-hidden="true" tabindex="-1"></a>    oas_vals <span class="op">=</span> df[<span class="st">'OAs'</span>]</span>
+<span id="cb2-55"><a href="#cb2-55" aria-hidden="true" tabindex="-1"></a>    rsv_vals <span class="op">=</span> df[<span class="st">'RSV'</span>]</span>
+<span id="cb2-56"><a href="#cb2-56" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> oas_vals.<span class="bu">min</span>() <span class="op">&gt;</span> <span class="dv">0</span>:</span>
+<span id="cb2-57"><a href="#cb2-57" aria-hidden="true" tabindex="-1"></a>        oas_vals <span class="op">=</span> pd.concat([pd.Series([<span class="dv">0</span>]), oas_vals])</span>
+<span id="cb2-58"><a href="#cb2-58" aria-hidden="true" tabindex="-1"></a>        rsv_vals <span class="op">=</span> pd.concat([pd.Series([<span class="dv">1</span>]), rsv_vals]) <span class="co"># Assuming RSV=1 at OAs=0</span></span>
+<span id="cb2-59"><a href="#cb2-59" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-60"><a href="#cb2-60" aria-hidden="true" tabindex="-1"></a>    norm_oas <span class="op">=</span> oas_vals <span class="op">/</span> oas_vals.<span class="bu">max</span>()</span>
+<span id="cb2-61"><a href="#cb2-61" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> calculate_trapezoid_auc(norm_oas, rsv_vals)</span>
+<span id="cb2-62"><a href="#cb2-62" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-63"><a href="#cb2-63" aria-hidden="true" tabindex="-1"></a><span class="co"># Define functions for Experiment 1</span></span>
+<span id="cb2-64"><a href="#cb2-64" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fit_model_exp1(model_data: pd.DataFrame) <span class="op">-&gt;</span> (az.InferenceData, pm.Model):</span>
+<span id="cb2-65"><a href="#cb2-65" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb2-66"><a href="#cb2-66" aria-hidden="true" tabindex="-1"></a><span class="co">    Fits the Bayesian hyperboloid model for Experiment 1.</span></span>
+<span id="cb2-67"><a href="#cb2-67" aria-hidden="true" tabindex="-1"></a><span class="co">    RSV = 1 / (1 + h * OAs)^s</span></span>
+<span id="cb2-68"><a href="#cb2-68" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb2-69"><a href="#cb2-69" aria-hidden="true" tabindex="-1"></a>    coords <span class="op">=</span> {<span class="st">"Subject"</span>: model_data[<span class="st">'Subject'</span>].cat.categories}</span>
+<span id="cb2-70"><a href="#cb2-70" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> pm.Model(coords<span class="op">=</span>coords) <span class="im">as</span> model:</span>
+<span id="cb2-71"><a href="#cb2-71" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Define Data ---</span></span>
+<span id="cb2-72"><a href="#cb2-72" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Get integer codes for subject indices</span></span>
+<span id="cb2-73"><a href="#cb2-73" aria-hidden="true" tabindex="-1"></a>        subject_idx <span class="op">=</span> pd.Categorical(model_data[<span class="st">'Subject'</span>], categories<span class="op">=</span>coords[<span class="st">"Subject"</span>]).codes</span>
+<span id="cb2-74"><a href="#cb2-74" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Create mutable data containers for PyMC</span></span>
+<span id="cb2-75"><a href="#cb2-75" aria-hidden="true" tabindex="-1"></a>        oas_data <span class="op">=</span> pm.Data(<span class="st">"oas_data"</span>, model_data[<span class="st">'OAs'</span>].values)</span>
+<span id="cb2-76"><a href="#cb2-76" aria-hidden="true" tabindex="-1"></a>        subject_idx_data <span class="op">=</span> pm.Data(<span class="st">"subject_idx_data"</span>, subject_idx)</span>
+<span id="cb2-77"><a href="#cb2-77" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-78"><a href="#cb2-78" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Priors ---</span></span>
+<span id="cb2-79"><a href="#cb2-79" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Using 'h' for the rate param to match user's R code</span></span>
+<span id="cb2-80"><a href="#cb2-80" aria-hidden="true" tabindex="-1"></a>        h <span class="op">=</span> pm.TruncatedNormal(<span class="st">"h"</span>, mu<span class="op">=</span><span class="dv">1</span>, sigma<span class="op">=</span><span class="dv">10</span>, lower<span class="op">=</span><span class="dv">0</span>, dims<span class="op">=</span><span class="st">"Subject"</span>)</span>
+<span id="cb2-81"><a href="#cb2-81" aria-hidden="true" tabindex="-1"></a>        s <span class="op">=</span> pm.TruncatedNormal(<span class="st">"s"</span>, mu<span class="op">=</span><span class="dv">1</span>, sigma<span class="op">=</span><span class="dv">10</span>, lower<span class="op">=</span><span class="dv">0</span>, dims<span class="op">=</span><span class="st">"Subject"</span>)</span>
+<span id="cb2-82"><a href="#cb2-82" aria-hidden="true" tabindex="-1"></a>        <span class="co"># 'nu' is the precision parameter (phi in brms/paper)</span></span>
+<span id="cb2-83"><a href="#cb2-83" aria-hidden="true" tabindex="-1"></a>        nu <span class="op">=</span> pm.HalfCauchy(<span class="st">"nu"</span>, beta<span class="op">=</span><span class="dv">10</span>, dims<span class="op">=</span><span class="st">"Subject"</span>)</span>
+<span id="cb2-84"><a href="#cb2-84" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-85"><a href="#cb2-85" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Model Definition (Equation 1) ---</span></span>
+<span id="cb2-86"><a href="#cb2-86" aria-hidden="true" tabindex="-1"></a>        mu <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> (<span class="dv">1</span> <span class="op">+</span> h[subject_idx_data] <span class="op">*</span> oas_data)<span class="op">**</span>s[subject_idx_data]</span>
+<span id="cb2-87"><a href="#cb2-87" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-88"><a href="#cb2-88" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Likelihood ---</span></span>
+<span id="cb2-89"><a href="#cb2-89" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Use Beta regression for proportional RSV data</span></span>
+<span id="cb2-90"><a href="#cb2-90" aria-hidden="true" tabindex="-1"></a>        pm.Beta(<span class="st">"RSV"</span>, mu<span class="op">=</span>mu, nu<span class="op">=</span>nu[subject_idx_data], observed<span class="op">=</span>model_data[<span class="st">'RSV'</span>].values)</span>
+<span id="cb2-91"><a href="#cb2-91" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-92"><a href="#cb2-92" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Sampling ---</span></span>
+<span id="cb2-93"><a href="#cb2-93" aria-hidden="true" tabindex="-1"></a>        idata <span class="op">=</span> pm.sample(draws<span class="op">=</span><span class="dv">2000</span>, tune<span class="op">=</span><span class="dv">2000</span>, chains<span class="op">=</span><span class="dv">4</span>, cores<span class="op">=</span><span class="dv">4</span>, progressbar<span class="op">=</span><span class="va">False</span>, target_accept<span class="op">=</span><span class="fl">0.95</span>)</span>
+<span id="cb2-94"><a href="#cb2-94" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> idata, model</span>
+<span id="cb2-95"><a href="#cb2-95" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-96"><a href="#cb2-96" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_predictions_exp1(idata: az.InferenceData, amount_val: <span class="bu">int</span>) <span class="op">-&gt;</span> pd.DataFrame:</span>
+<span id="cb2-97"><a href="#cb2-97" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb2-98"><a href="#cb2-98" aria-hidden="true" tabindex="-1"></a><span class="co">    Generates median posterior predictions for Experiment 1 models.</span></span>
+<span id="cb2-99"><a href="#cb2-99" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb2-100"><a href="#cb2-100" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Extract posterior draws for parameters</span></span>
+<span id="cb2-101"><a href="#cb2-101" aria-hidden="true" tabindex="-1"></a>    post_h <span class="op">=</span> az.extract(idata, var_names<span class="op">=</span>[<span class="st">"h"</span>])</span>
+<span id="cb2-102"><a href="#cb2-102" aria-hidden="true" tabindex="-1"></a>    post_s <span class="op">=</span> az.extract(idata, var_names<span class="op">=</span>[<span class="st">"s"</span>])</span>
+<span id="cb2-103"><a href="#cb2-103" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-104"><a href="#cb2-104" aria-hidden="true" tabindex="-1"></a>    pred_df_list <span class="op">=</span> []</span>
+<span id="cb2-105"><a href="#cb2-105" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Iterate through each subject in the model</span></span>
+<span id="cb2-106"><a href="#cb2-106" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> subj <span class="kw">in</span> idata.posterior.Subject.values:</span>
+<span id="cb2-107"><a href="#cb2-107" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Create a smooth grid of OAs values for plotting</span></span>
+<span id="cb2-108"><a href="#cb2-108" aria-hidden="true" tabindex="-1"></a>        oas_grid <span class="op">=</span> np.linspace(<span class="dv">0</span>, <span class="dv">10</span>, <span class="dv">100</span>)</span>
+<span id="cb2-109"><a href="#cb2-109" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-110"><a href="#cb2-110" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Get the median parameter estimates for this subject</span></span>
+<span id="cb2-111"><a href="#cb2-111" aria-hidden="true" tabindex="-1"></a>        h_med <span class="op">=</span> post_h.sel(Subject<span class="op">=</span>subj).median().item()</span>
+<span id="cb2-112"><a href="#cb2-112" aria-hidden="true" tabindex="-1"></a>        s_med <span class="op">=</span> post_s.sel(Subject<span class="op">=</span>subj).median().item()</span>
+<span id="cb2-113"><a href="#cb2-113" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-114"><a href="#cb2-114" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Calculate predicted RSV using the hyperboloid formula</span></span>
+<span id="cb2-115"><a href="#cb2-115" aria-hidden="true" tabindex="-1"></a>        pred_rsv <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> (<span class="dv">1</span> <span class="op">+</span> h_med <span class="op">*</span> oas_grid)<span class="op">**</span>s_med</span>
+<span id="cb2-116"><a href="#cb2-116" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-117"><a href="#cb2-117" aria-hidden="true" tabindex="-1"></a>        pred_df_list.append(pd.DataFrame({</span>
+<span id="cb2-118"><a href="#cb2-118" aria-hidden="true" tabindex="-1"></a>            <span class="st">'Subject'</span>: subj, <span class="st">'OAs'</span>: oas_grid, <span class="st">'.epred'</span>: pred_rsv</span>
+<span id="cb2-119"><a href="#cb2-119" aria-hidden="true" tabindex="-1"></a>        }))</span>
+<span id="cb2-120"><a href="#cb2-120" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-121"><a href="#cb2-121" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Combine predictions for all subjects</span></span>
+<span id="cb2-122"><a href="#cb2-122" aria-hidden="true" tabindex="-1"></a>    pred_df <span class="op">=</span> pd.concat(pred_df_list)</span>
+<span id="cb2-123"><a href="#cb2-123" aria-hidden="true" tabindex="-1"></a>    pred_df[<span class="st">'Amount'</span>] <span class="op">=</span> <span class="ss">f"</span><span class="sc">{</span>amount_val<span class="sc">}</span><span class="ss"> Pellets"</span></span>
+<span id="cb2-124"><a href="#cb2-124" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pred_df</span>
+<span id="cb2-125"><a href="#cb2-125" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-126"><a href="#cb2-126" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> calculate_r2_exp1(model: pm.Model, idata: az.InferenceData, model_data: pd.DataFrame) <span class="op">-&gt;</span> pd.Series:</span>
+<span id="cb2-127"><a href="#cb2-127" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Calculates Bayesian R-squared for each subject in an Experiment 1 model."""</span></span>
+<span id="cb2-128"><a href="#cb2-128" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> model:</span>
+<span id="cb2-129"><a href="#cb2-129" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Set data to the full dataset for this model</span></span>
+<span id="cb2-130"><a href="#cb2-130" aria-hidden="true" tabindex="-1"></a>        pm.set_data({</span>
+<span id="cb2-131"><a href="#cb2-131" aria-hidden="true" tabindex="-1"></a>            <span class="st">"oas_data"</span>: model_data[<span class="st">'OAs'</span>].values,</span>
+<span id="cb2-132"><a href="#cb2-132" aria-hidden="true" tabindex="-1"></a>            <span class="st">"subject_idx_data"</span>: pd.Categorical(model_data[<span class="st">'Subject'</span>], categories<span class="op">=</span>model.coords[<span class="st">'Subject'</span>]).codes</span>
+<span id="cb2-133"><a href="#cb2-133" aria-hidden="true" tabindex="-1"></a>        })</span>
+<span id="cb2-134"><a href="#cb2-134" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Generate ONE posterior predictive sample</span></span>
+<span id="cb2-135"><a href="#cb2-135" aria-hidden="true" tabindex="-1"></a>        post_pred <span class="op">=</span> pm.sample_posterior_predictive(idata, var_names<span class="op">=</span>[<span class="st">"RSV"</span>], random_seed<span class="op">=</span><span class="dv">42</span>, progressbar<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb2-136"><a href="#cb2-136" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-137"><a href="#cb2-137" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate median prediction for each observation</span></span>
+<span id="cb2-138"><a href="#cb2-138" aria-hidden="true" tabindex="-1"></a>    epred <span class="op">=</span> post_pred.posterior_predictive[<span class="st">'RSV'</span>].median(dim<span class="op">=</span>(<span class="st">"chain"</span>, <span class="st">"draw"</span>)).values</span>
+<span id="cb2-139"><a href="#cb2-139" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-140"><a href="#cb2-140" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Add predictions to a copy of the dataframe</span></span>
+<span id="cb2-141"><a href="#cb2-141" aria-hidden="true" tabindex="-1"></a>    results_df <span class="op">=</span> model_data.copy()</span>
+<span id="cb2-142"><a href="#cb2-142" aria-hidden="true" tabindex="-1"></a>    results_df[<span class="st">'.epred'</span>] <span class="op">=</span> epred</span>
+<span id="cb2-143"><a href="#cb2-143" aria-hidden="true" tabindex="-1"></a>    results_df[<span class="st">'residual'</span>] <span class="op">=</span> results_df[<span class="st">'RSV'</span>] <span class="op">-</span> results_df[<span class="st">'.epred'</span>]</span>
+<span id="cb2-144"><a href="#cb2-144" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-145"><a href="#cb2-145" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate Sum of Squares Residual (ss_res) for each subject</span></span>
+<span id="cb2-146"><a href="#cb2-146" aria-hidden="true" tabindex="-1"></a>    ss_res <span class="op">=</span> results_df.groupby(<span class="st">'Subject'</span>, observed<span class="op">=</span><span class="va">True</span>)[<span class="st">'residual'</span>].<span class="bu">apply</span>(<span class="kw">lambda</span> x: (x<span class="op">**</span><span class="dv">2</span>).<span class="bu">sum</span>())</span>
+<span id="cb2-147"><a href="#cb2-147" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-148"><a href="#cb2-148" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate Sum of Squares Total (ss_tot) for each subject</span></span>
+<span id="cb2-149"><a href="#cb2-149" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> ss_total(x):</span>
+<span id="cb2-150"><a href="#cb2-150" aria-hidden="true" tabindex="-1"></a>        <span class="cf">return</span> ((x <span class="op">-</span> x.mean())<span class="op">**</span><span class="dv">2</span>).<span class="bu">sum</span>()</span>
+<span id="cb2-151"><a href="#cb2-151" aria-hidden="true" tabindex="-1"></a>    ss_tot <span class="op">=</span> results_df.groupby(<span class="st">'Subject'</span>, observed<span class="op">=</span><span class="va">True</span>)[<span class="st">'RSV'</span>].<span class="bu">apply</span>(ss_total)</span>
+<span id="cb2-152"><a href="#cb2-152" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-153"><a href="#cb2-153" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Calculate R2 for each subject</span></span>
+<span id="cb2-154"><a href="#cb2-154" aria-hidden="true" tabindex="-1"></a>    r2_series <span class="op">=</span> <span class="dv">1</span> <span class="op">-</span> (ss_res <span class="op">/</span> ss_tot)</span>
+<span id="cb2-155"><a href="#cb2-155" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> r2_series</span>
+<span id="cb2-156"><a href="#cb2-156" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-157"><a href="#cb2-157" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_param_summary(idata: az.InferenceData, amount: <span class="bu">int</span>) <span class="op">-&gt;</span> pd.DataFrame:</span>
+<span id="cb2-158"><a href="#cb2-158" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Extracts parameter estimates (mean, sd) for each subject."""</span></span>
+<span id="cb2-159"><a href="#cb2-159" aria-hidden="true" tabindex="-1"></a>    summary <span class="op">=</span> az.summary(idata, var_names<span class="op">=</span>[<span class="st">'h'</span>, <span class="st">'s'</span>], kind<span class="op">=</span><span class="st">'stats'</span>)</span>
+<span id="cb2-160"><a href="#cb2-160" aria-hidden="true" tabindex="-1"></a>    summary[<span class="st">'Subject'</span>] <span class="op">=</span> summary.index.<span class="bu">str</span>.split(<span class="st">'['</span>).<span class="bu">str</span>[<span class="dv">1</span>].<span class="bu">str</span>.replace(<span class="st">']'</span>, <span class="st">''</span>)</span>
+<span id="cb2-161"><a href="#cb2-161" aria-hidden="true" tabindex="-1"></a>    summary[<span class="st">'Parameter'</span>] <span class="op">=</span> summary.index.<span class="bu">str</span>.split(<span class="st">'['</span>).<span class="bu">str</span>[<span class="dv">0</span>]</span>
+<span id="cb2-162"><a href="#cb2-162" aria-hidden="true" tabindex="-1"></a>    summary[<span class="st">'Amount'</span>] <span class="op">=</span> amount</span>
+<span id="cb2-163"><a href="#cb2-163" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> summary[[<span class="st">'Subject'</span>, <span class="st">'Amount'</span>, <span class="st">'Parameter'</span>, <span class="st">'mean'</span>, <span class="st">'sd'</span>]]</span>
+<span id="cb2-164"><a href="#cb2-164" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-165"><a href="#cb2-165" aria-hidden="true" tabindex="-1"></a><span class="co"># Define functions for Experiment 2</span></span>
+<span id="cb2-166"><a href="#cb2-166" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fit_model_exp2(model_data: pd.DataFrame) <span class="op">-&gt;</span> (az.InferenceData, pm.Model):</span>
+<span id="cb2-167"><a href="#cb2-167" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb2-168"><a href="#cb2-168" aria-hidden="true" tabindex="-1"></a><span class="co">    Fits the Bayesian generalized hyperboloid model for Experiment 2.</span></span>
+<span id="cb2-169"><a href="#cb2-169" aria-hidden="true" tabindex="-1"></a><span class="co">    RSV = ((1 + h * OAs_Sm)^s) / ((1 + h * OAs)^s)</span></span>
+<span id="cb2-170"><a href="#cb2-170" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb2-171"><a href="#cb2-171" aria-hidden="true" tabindex="-1"></a>    subjects_in_data <span class="op">=</span> model_data[<span class="st">'Subject'</span>].cat.categories</span>
+<span id="cb2-172"><a href="#cb2-172" aria-hidden="true" tabindex="-1"></a>    coords <span class="op">=</span> {<span class="st">"Subject"</span>: subjects_in_data}</span>
+<span id="cb2-173"><a href="#cb2-173" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-174"><a href="#cb2-174" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> pm.Model(coords<span class="op">=</span>coords) <span class="im">as</span> model:</span>
+<span id="cb2-175"><a href="#cb2-175" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Define Data ---</span></span>
+<span id="cb2-176"><a href="#cb2-176" aria-hidden="true" tabindex="-1"></a>        subject_idx <span class="op">=</span> pd.Categorical(model_data[<span class="st">'Subject'</span>], categories<span class="op">=</span>coords[<span class="st">"Subject"</span>]).codes</span>
+<span id="cb2-177"><a href="#cb2-177" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Create mutable data containers</span></span>
+<span id="cb2-178"><a href="#cb2-178" aria-hidden="true" tabindex="-1"></a>        oas_data <span class="op">=</span> pm.Data(<span class="st">"oas_data"</span>, model_data[<span class="st">'OAs'</span>].values)</span>
+<span id="cb2-179"><a href="#cb2-179" aria-hidden="true" tabindex="-1"></a>        oas_sm_data <span class="op">=</span> pm.Data(<span class="st">"oas_sm_data"</span>, model_data[<span class="st">'OAs_Sm'</span>].values)</span>
+<span id="cb2-180"><a href="#cb2-180" aria-hidden="true" tabindex="-1"></a>        subject_idx_data <span class="op">=</span> pm.Data(<span class="st">"subject_idx_data"</span>, subject_idx)</span>
+<span id="cb2-181"><a href="#cb2-181" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-182"><a href="#cb2-182" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Priors ---</span></span>
+<span id="cb2-183"><a href="#cb2-183" aria-hidden="true" tabindex="-1"></a>        h <span class="op">=</span> pm.TruncatedNormal(<span class="st">"h"</span>, mu<span class="op">=</span><span class="dv">1</span>, sigma<span class="op">=</span><span class="dv">10</span>, lower<span class="op">=</span><span class="dv">0</span>, dims<span class="op">=</span><span class="st">"Subject"</span>)</span>
+<span id="cb2-184"><a href="#cb2-184" aria-hidden="true" tabindex="-1"></a>        s <span class="op">=</span> pm.TruncatedNormal(<span class="st">"s"</span>, mu<span class="op">=</span><span class="dv">1</span>, sigma<span class="op">=</span><span class="dv">10</span>, lower<span class="op">=</span><span class="dv">0</span>, dims<span class="op">=</span><span class="st">"Subject"</span>)</span>
+<span id="cb2-185"><a href="#cb2-185" aria-hidden="true" tabindex="-1"></a>        nu <span class="op">=</span> pm.HalfCauchy(<span class="st">"nu"</span>, beta<span class="op">=</span><span class="dv">10</span>, dims<span class="op">=</span><span class="st">"Subject"</span>)</span>
+<span id="cb2-186"><a href="#cb2-186" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-187"><a href="#cb2-187" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Model Definition (Equation 2) ---</span></span>
+<span id="cb2-188"><a href="#cb2-188" aria-hidden="true" tabindex="-1"></a>        mu <span class="op">=</span> ((<span class="dv">1</span> <span class="op">+</span> h[subject_idx_data] <span class="op">*</span> oas_sm_data)<span class="op">**</span>s[subject_idx_data]) <span class="op">/</span> <span class="op">\</span></span>
+<span id="cb2-189"><a href="#cb2-189" aria-hidden="true" tabindex="-1"></a>             ((<span class="dv">1</span> <span class="op">+</span> h[subject_idx_data] <span class="op">*</span> oas_data)<span class="op">**</span>s[subject_idx_data])</span>
+<span id="cb2-190"><a href="#cb2-190" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-191"><a href="#cb2-191" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Likelihood ---</span></span>
+<span id="cb2-192"><a href="#cb2-192" aria-hidden="true" tabindex="-1"></a>        pm.Beta(<span class="st">"RSV"</span>, mu<span class="op">=</span>mu, nu<span class="op">=</span>nu[subject_idx_data], observed<span class="op">=</span>model_data[<span class="st">'RSV'</span>].values)</span>
+<span id="cb2-193"><a href="#cb2-193" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-194"><a href="#cb2-194" aria-hidden="true" tabindex="-1"></a>        <span class="co"># --- Sampling ---</span></span>
+<span id="cb2-195"><a href="#cb2-195" aria-hidden="true" tabindex="-1"></a>        idata <span class="op">=</span> pm.sample(draws<span class="op">=</span><span class="dv">2000</span>, tune<span class="op">=</span><span class="dv">2000</span>, chains<span class="op">=</span><span class="dv">4</span>, cores<span class="op">=</span><span class="dv">4</span>, progressbar<span class="op">=</span><span class="va">False</span>, target_accept<span class="op">=</span><span class="fl">0.95</span>) </span>
+<span id="cb2-196"><a href="#cb2-196" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-197"><a href="#cb2-197" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> idata, model</span>
+<span id="cb2-198"><a href="#cb2-198" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-199"><a href="#cb2-199" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_predictions_exp2(idata: az.InferenceData, amount_val: <span class="bu">int</span>, mult_val: <span class="bu">float</span>, model_data: pd.DataFrame) <span class="op">-&gt;</span> pd.DataFrame:</span>
+<span id="cb2-200"><a href="#cb2-200" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Generates median predictions for Experiment 2 models."""</span></span>
+<span id="cb2-201"><a href="#cb2-201" aria-hidden="true" tabindex="-1"></a>    post_h <span class="op">=</span> az.extract(idata, var_names<span class="op">=</span>[<span class="st">"h"</span>])</span>
+<span id="cb2-202"><a href="#cb2-202" aria-hidden="true" tabindex="-1"></a>    post_s <span class="op">=</span> az.extract(idata, var_names<span class="op">=</span>[<span class="st">"s"</span>])</span>
+<span id="cb2-203"><a href="#cb2-203" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-204"><a href="#cb2-204" aria-hidden="true" tabindex="-1"></a>    pred_df_list <span class="op">=</span> []</span>
+<span id="cb2-205"><a href="#cb2-205" aria-hidden="true" tabindex="-1"></a>    subjects_in_model <span class="op">=</span> idata.posterior.Subject.values</span>
+<span id="cb2-206"><a href="#cb2-206" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-207"><a href="#cb2-207" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> subj <span class="kw">in</span> subjects_in_model:</span>
+<span id="cb2-208"><a href="#cb2-208" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Create a grid of OAs for prediction</span></span>
+<span id="cb2-209"><a href="#cb2-209" aria-hidden="true" tabindex="-1"></a>        oas_grid <span class="op">=</span> np.linspace(</span>
+<span id="cb2-210"><a href="#cb2-210" aria-hidden="true" tabindex="-1"></a>            model_data[<span class="st">'OAs'</span>].<span class="bu">min</span>(), model_data[<span class="st">'OAs'</span>].<span class="bu">max</span>(), <span class="dv">100</span></span>
+<span id="cb2-211"><a href="#cb2-211" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb2-212"><a href="#cb2-212" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Get the single OAs_Sm value for this condition</span></span>
+<span id="cb2-213"><a href="#cb2-213" aria-hidden="true" tabindex="-1"></a>        oas_sm_val <span class="op">=</span> model_data[<span class="st">'OAs_Sm'</span>].iloc[<span class="dv">0</span>]</span>
+<span id="cb2-214"><a href="#cb2-214" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-215"><a href="#cb2-215" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Get median parameter estimates</span></span>
+<span id="cb2-216"><a href="#cb2-216" aria-hidden="true" tabindex="-1"></a>        h_med <span class="op">=</span> post_h.sel(Subject<span class="op">=</span>subj).median().item()</span>
+<span id="cb2-217"><a href="#cb2-217" aria-hidden="true" tabindex="-1"></a>        s_med <span class="op">=</span> post_s.sel(Subject<span class="op">=</span>subj).median().item()</span>
+<span id="cb2-218"><a href="#cb2-218" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-219"><a href="#cb2-219" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Calculate predicted RSV using the Exp 2 formula (Eq. 2)</span></span>
+<span id="cb2-220"><a href="#cb2-220" aria-hidden="true" tabindex="-1"></a>        pred_rsv <span class="op">=</span> ((<span class="dv">1</span> <span class="op">+</span> h_med <span class="op">*</span> oas_sm_val)<span class="op">**</span>s_med) <span class="op">/</span> ((<span class="dv">1</span> <span class="op">+</span> h_med <span class="op">*</span> oas_grid)<span class="op">**</span>s_med)</span>
+<span id="cb2-221"><a href="#cb2-221" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb2-222"><a href="#cb2-222" aria-hidden="true" tabindex="-1"></a>        pred_df_list.append(pd.DataFrame({</span>
+<span id="cb2-223"><a href="#cb2-223" aria-hidden="true" tabindex="-1"></a>            <span class="st">'Subject'</span>: subj, <span class="st">'OAs'</span>: oas_grid, <span class="st">'.epred'</span>: pred_rsv</span>
+<span id="cb2-224"><a href="#cb2-224" aria-hidden="true" tabindex="-1"></a>        }))</span>
+<span id="cb2-225"><a href="#cb2-225" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-226"><a href="#cb2-226" aria-hidden="true" tabindex="-1"></a>    pred_df <span class="op">=</span> pd.concat(pred_df_list)</span>
+<span id="cb2-227"><a href="#cb2-227" aria-hidden="true" tabindex="-1"></a>    pred_df[<span class="st">'Amount'</span>] <span class="op">=</span> <span class="ss">f"</span><span class="sc">{</span>amount_val<span class="sc">}</span><span class="ss"> Pellets"</span></span>
+<span id="cb2-228"><a href="#cb2-228" aria-hidden="true" tabindex="-1"></a>    pred_df[<span class="st">'Multiplier'</span>] <span class="op">=</span> mult_val</span>
+<span id="cb2-229"><a href="#cb2-229" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> pred_df</span>
+<span id="cb2-230"><a href="#cb2-230" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-231"><a href="#cb2-231" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> calculate_r2_exp2(model: pm.Model, idata: az.InferenceData, model_data: pd.DataFrame) <span class="op">-&gt;</span> pd.Series:</span>
+<span id="cb2-232"><a href="#cb2-232" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Calculates Bayesian R-squared for each subject in an Experiment 2 model."""</span></span>
+<span id="cb2-233"><a href="#cb2-233" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> model:</span>
+<span id="cb2-234"><a href="#cb2-234" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Set all required mutable data</span></span>
+<span id="cb2-235"><a href="#cb2-235" aria-hidden="true" tabindex="-1"></a>        pm.set_data({</span>
+<span id="cb2-236"><a href="#cb2-236" aria-hidden="true" tabindex="-1"></a>            <span class="st">"oas_data"</span>: model_data[<span class="st">'OAs'</span>].values,</span>
+<span id="cb2-237"><a href="#cb2-237" aria-hidden="true" tabindex="-1"></a>            <span class="st">"oas_sm_data"</span>: model_data[<span class="st">'OAs_Sm'</span>].values,</span>
+<span id="cb2-238"><a href="#cb2-238" aria-hidden="true" tabindex="-1"></a>            <span class="st">"subject_idx_data"</span>: pd.Categorical(model_data[<span class="st">'Subject'</span>], categories<span class="op">=</span>model.coords[<span class="st">'Subject'</span>]).codes</span>
+<span id="cb2-239"><a href="#cb2-239" aria-hidden="true" tabindex="-1"></a>        })</span>
+<span id="cb2-240"><a href="#cb2-240" aria-hidden="true" tabindex="-1"></a>        post_pred <span class="op">=</span> pm.sample_posterior_predictive(idata, var_names<span class="op">=</span>[<span class="st">"RSV"</span>], random_seed<span class="op">=</span><span class="dv">42</span>, progressbar<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb2-241"><a href="#cb2-241" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-242"><a href="#cb2-242" aria-hidden="true" tabindex="-1"></a>    epred <span class="op">=</span> post_pred.posterior_predictive[<span class="st">'RSV'</span>].median(dim<span class="op">=</span>(<span class="st">"chain"</span>, <span class="st">"draw"</span>)).values</span>
+<span id="cb2-243"><a href="#cb2-243" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-244"><a href="#cb2-244" aria-hidden="true" tabindex="-1"></a>    results_df <span class="op">=</span> model_data.copy()</span>
+<span id="cb2-245"><a href="#cb2-245" aria-hidden="true" tabindex="-1"></a>    results_df[<span class="st">'.epred'</span>] <span class="op">=</span> epred</span>
+<span id="cb2-246"><a href="#cb2-246" aria-hidden="true" tabindex="-1"></a>    results_df[<span class="st">'residual'</span>] <span class="op">=</span> results_df[<span class="st">'RSV'</span>] <span class="op">-</span> results_df[<span class="st">'.epred'</span>]</span>
+<span id="cb2-247"><a href="#cb2-247" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-248"><a href="#cb2-248" aria-hidden="true" tabindex="-1"></a>    ss_res <span class="op">=</span> results_df.groupby(<span class="st">'Subject'</span>, observed<span class="op">=</span><span class="va">True</span>)[<span class="st">'residual'</span>].<span class="bu">apply</span>(<span class="kw">lambda</span> x: (x<span class="op">**</span><span class="dv">2</span>).<span class="bu">sum</span>())</span>
+<span id="cb2-249"><a href="#cb2-249" aria-hidden="true" tabindex="-1"></a>    ss_tot <span class="op">=</span> results_df.groupby(<span class="st">'Subject'</span>, observed<span class="op">=</span><span class="va">True</span>)[<span class="st">'RSV'</span>].<span class="bu">apply</span>(<span class="kw">lambda</span> x: ((x <span class="op">-</span> x.mean())<span class="op">**</span><span class="dv">2</span>).<span class="bu">sum</span>())</span>
+<span id="cb2-250"><a href="#cb2-250" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb2-251"><a href="#cb2-251" aria-hidden="true" tabindex="-1"></a>    r2_series <span class="op">=</span> <span class="dv">1</span> <span class="op">-</span> (ss_res <span class="op">/</span> ss_tot)</span>
+<span id="cb2-252"><a href="#cb2-252" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Set negative R2 values to NaN as they indicate poor fit</span></span>
+<span id="cb2-253"><a href="#cb2-253" aria-hidden="true" tabindex="-1"></a>    r2_series[r2_series <span class="op">&lt;</span> <span class="dv">0</span>] <span class="op">=</span> np.nan</span>
+<span id="cb2-254"><a href="#cb2-254" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> r2_series</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+</section>
+<section id="data-loading-processing" class="level2">
+<h2 class="anchored" data-anchor-id="data-loading-processing">Data Loading &amp; Processing</h2>
+<p>This section loads the raw data for both experiments from the OSF repository, processes them into a single, analysis-ready DataFrame, and calculates the Area under the Curve (AuC) for each subject and condition.</p>
+<div id="dcb0c23a" class="cell" data-execution_count="13">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- 3. Data Loading and Processing ---</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Load OSF Data ---</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>raw_data_exp1 <span class="op">=</span> pd.read_csv(<span class="st">"PigeonPD_Exp1.csv"</span>, dtype<span class="op">=</span>{<span class="st">'Probability'</span>: <span class="st">'str'</span>})</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>raw_data_exp2 <span class="op">=</span> pd.read_csv(<span class="st">"PigeonPD_Exp2.csv"</span>, dtype<span class="op">=</span>{<span class="st">'Multiplier'</span>: <span class="st">'str'</span>})</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Data loaded successfully."</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Process Experiment 1 Data ---</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>processed_data_exp1 <span class="op">=</span> raw_data_exp1.assign(</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>    Experiment<span class="op">=</span><span class="dv">1</span>,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    Rep<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="st">'Probability'</span>].<span class="bu">str</span>.contains(<span class="st">"R"</span>).astype(<span class="bu">int</span>),</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    Prob_Lg<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="st">'Probability'</span>].<span class="bu">str</span>.replace(<span class="st">"R"</span>, <span class="st">""</span>).astype(<span class="bu">float</span>) <span class="op">/</span> <span class="dv">100</span>,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>    OAs<span class="op">=</span><span class="kw">lambda</span> x: (<span class="dv">1</span> <span class="op">-</span> x[<span class="st">'Prob_Lg'</span>]) <span class="op">/</span> x[<span class="st">'Prob_Lg'</span>],</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>    RSV<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="st">'SV'</span>] <span class="op">/</span> x[<span class="st">'Amount'</span>],</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>    Multiplier<span class="op">=</span><span class="fl">1.0</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>    OAs_Sm<span class="op">=</span><span class="dv">0</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>).<span class="bu">filter</span>(items<span class="op">=</span>[<span class="st">'Subject'</span>, <span class="st">'Experiment'</span>, <span class="st">'Multiplier'</span>, <span class="st">'Amount'</span>, <span class="st">'Rep'</span>, <span class="st">'OAs'</span>, <span class="st">'RSV'</span>, <span class="st">'OAs_Sm'</span>, <span class="st">'Prob_Lg'</span>])</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Process Experiment 2 Data ---</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>processed_data_exp2 <span class="op">=</span> raw_data_exp2.assign(</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>    Experiment<span class="op">=</span><span class="dv">2</span>,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>    Rep<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="st">'Multiplier'</span>].<span class="bu">str</span>.contains(<span class="st">"R"</span>).astype(<span class="bu">int</span>),</span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>    Multiplier<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="st">'Multiplier'</span>].<span class="bu">str</span>.replace(<span class="st">"R"</span>, <span class="st">""</span>).astype(<span class="bu">float</span>),</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a>    Prob_Lg<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="st">'Probability_Lg'</span>] <span class="op">/</span> <span class="dv">100</span>,</span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a>    Prob_Sm<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="st">'Probability_Sm'</span>] <span class="op">/</span> <span class="dv">100</span>,</span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a>    OAs<span class="op">=</span><span class="kw">lambda</span> x: (<span class="dv">1</span> <span class="op">-</span> x[<span class="st">'Prob_Lg'</span>]) <span class="op">/</span> x[<span class="st">'Prob_Lg'</span>],</span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a>    OAs_Sm<span class="op">=</span><span class="kw">lambda</span> x: (<span class="dv">1</span> <span class="op">-</span> x[<span class="st">'Prob_Sm'</span>]) <span class="op">/</span> x[<span class="st">'Prob_Sm'</span>],</span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a>    RSV<span class="op">=</span><span class="kw">lambda</span> x: x[<span class="st">'SV'</span>] <span class="op">/</span> x[<span class="st">'Amount'</span>]</span>
+<span id="cb3-29"><a href="#cb3-29" aria-hidden="true" tabindex="-1"></a>).<span class="bu">filter</span>(items<span class="op">=</span>[<span class="st">'Subject'</span>, <span class="st">'Experiment'</span>, <span class="st">'Multiplier'</span>, <span class="st">'Amount'</span>, <span class="st">'Rep'</span>, <span class="st">'OAs'</span>, <span class="st">'RSV'</span>, <span class="st">'OAs_Sm'</span>, <span class="st">'Prob_Lg'</span>])</span>
+<span id="cb3-30"><a href="#cb3-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-31"><a href="#cb3-31" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Combine Data &amp; Create Mean Subject ---</span></span>
+<span id="cb3-32"><a href="#cb3-32" aria-hidden="true" tabindex="-1"></a>combined_data <span class="op">=</span> pd.concat([processed_data_exp1, processed_data_exp2])</span>
+<span id="cb3-33"><a href="#cb3-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-34"><a href="#cb3-34" aria-hidden="true" tabindex="-1"></a>mean_data <span class="op">=</span> combined_data[combined_data[<span class="st">'Rep'</span>] <span class="op">==</span> <span class="dv">0</span>].groupby(</span>
+<span id="cb3-35"><a href="#cb3-35" aria-hidden="true" tabindex="-1"></a>    [<span class="st">'Experiment'</span>, <span class="st">'Amount'</span>, <span class="st">'Multiplier'</span>, <span class="st">'OAs'</span>, <span class="st">'Prob_Lg'</span>, <span class="st">'OAs_Sm'</span>], as_index<span class="op">=</span><span class="va">False</span></span>
+<span id="cb3-36"><a href="#cb3-36" aria-hidden="true" tabindex="-1"></a>)[<span class="st">'RSV'</span>].mean().assign(Subject<span class="op">=</span><span class="st">"Mean"</span>, Rep<span class="op">=</span><span class="dv">0</span>)</span>
+<span id="cb3-37"><a href="#cb3-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-38"><a href="#cb3-38" aria-hidden="true" tabindex="-1"></a><span class="co"># Set Subject as categorical with 'Mean' last</span></span>
+<span id="cb3-39"><a href="#cb3-39" aria-hidden="true" tabindex="-1"></a>subject_levels <span class="op">=</span> [<span class="st">"P41"</span>,<span class="st">"P42"</span>,<span class="st">"P43"</span>,<span class="st">"P44"</span>,<span class="st">"P45"</span>,<span class="st">"P46"</span>,<span class="st">"P47"</span>,<span class="st">"P48"</span>,<span class="st">"Mean"</span>]</span>
+<span id="cb3-40"><a href="#cb3-40" aria-hidden="true" tabindex="-1"></a>combined_data[<span class="st">'Subject'</span>] <span class="op">=</span> pd.Categorical(</span>
+<span id="cb3-41"><a href="#cb3-41" aria-hidden="true" tabindex="-1"></a>    combined_data[<span class="st">'Subject'</span>], categories<span class="op">=</span>subject_levels, ordered<span class="op">=</span><span class="va">True</span></span>
+<span id="cb3-42"><a href="#cb3-42" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-43"><a href="#cb3-43" aria-hidden="true" tabindex="-1"></a><span class="co"># Clip RSV for Beta regression, which requires the outcome to be in the open interval (0, 1)</span></span>
+<span id="cb3-44"><a href="#cb3-44" aria-hidden="true" tabindex="-1"></a>combined_data[<span class="st">'RSV'</span>] <span class="op">=</span> np.clip(combined_data[<span class="st">'RSV'</span>], <span class="fl">1e-6</span>, <span class="dv">1</span> <span class="op">-</span> <span class="fl">1e-6</span>)</span>
+<span id="cb3-45"><a href="#cb3-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-46"><a href="#cb3-46" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Create AuC Dataframe ---</span></span>
+<span id="cb3-47"><a href="#cb3-47" aria-hidden="true" tabindex="-1"></a>auc_data <span class="op">=</span> combined_data[combined_data[<span class="st">'Rep'</span>] <span class="op">==</span> <span class="dv">0</span>].groupby(</span>
+<span id="cb3-48"><a href="#cb3-48" aria-hidden="true" tabindex="-1"></a>    [<span class="st">'Subject'</span>, <span class="st">'Experiment'</span>, <span class="st">'Multiplier'</span>, <span class="st">'Amount'</span>]</span>
+<span id="cb3-49"><a href="#cb3-49" aria-hidden="true" tabindex="-1"></a>).<span class="bu">apply</span>(calculate_auc_group).reset_index(name<span class="op">=</span><span class="st">'AuC'</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Data loaded successfully.</code></pre>
+</div>
+</div>
+</section>
+<section id="experiment-1-certain-vs.-probabilistic-rewards" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-1-certain-vs.-probabilistic-rewards">Experiment 1: Certain vs.&nbsp;Probabilistic Rewards</h2>
+<p>In Experiment 1, pigeons chose between a smaller, certain reinforcer (Odds Against = 0) and a larger, probabilistic reinforcer. The following section fits the hyperboloid discounting model (Equation 1) to the data for each amount (16 and 32 pellets).</p>
+<div id="160a613c" class="cell" data-execution_count="14">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Experiment 1: Bayesian Model Fitting ---</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Fit models for each amount ---</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Fitting Experiment 1 models..."</span>)</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co"># 16-Pellet Model</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>data_exp1_16p <span class="op">=</span> combined_data[(combined_data.Experiment <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (combined_data.Rep <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (combined_data.Amount <span class="op">==</span> <span class="dv">16</span>)]</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>idata_exp1_16, model_exp1_16 <span class="op">=</span> fit_model_exp1(data_exp1_16p)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="co"># 32-Pellet Model</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>data_exp1_32p <span class="op">=</span> combined_data[(combined_data.Experiment <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (combined_data.Rep <span class="op">==</span> <span class="dv">0</span>) <span class="op">&amp;</span> (combined_data.Amount <span class="op">==</span> <span class="dv">32</span>)]</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>idata_exp1_32, model_exp1_32 <span class="op">=</span> fit_model_exp1(data_exp1_32p)</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Experiment 1 model fitting complete."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fitting Experiment 1 models...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Initializing NUTS using jitter+adapt_diag...
+Multiprocess sampling (4 chains in 4 jobs)
+NUTS: [h, s, nu]
+Sampling 4 chains for 2_000 tune and 2_000 draw iterations (8_000 + 8_000 draws total) took 14 seconds.
+Initializing NUTS using jitter+adapt_diag...
+Multiprocess sampling (4 chains in 4 jobs)
+NUTS: [h, s, nu]
+Sampling 4 chains for 2_000 tune and 2_000 draw iterations (8_000 + 8_000 draws total) took 12 seconds.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Experiment 1 model fitting complete.</code></pre>
+</div>
+</div>
+<div id="ac53b213" class="cell" data-execution_count="15">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Experiment 1: Plotting Results (Figure 1 Replication) ---</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Generate prediction curves for both models ---</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>pred_curves_exp1 <span class="op">=</span> pd.concat([</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    get_predictions_exp1(idata_exp1_16, <span class="dv">16</span>),</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>    get_predictions_exp1(idata_exp1_32, <span class="dv">32</span>)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>pred_curves_exp1[<span class="st">'Amount'</span>] <span class="op">=</span> pd.Categorical(pred_curves_exp1[<span class="st">'Amount'</span>], categories<span class="op">=</span>[<span class="st">"32 Pellets"</span>, <span class="st">"16 Pellets"</span>])</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Create the FacetGrid Plot ---</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>plot_data_exp1 <span class="op">=</span> combined_data[(combined_data.Experiment <span class="op">==</span> <span class="dv">1</span>)].copy()</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>plot_data_exp1[<span class="st">'Amount'</span>] <span class="op">=</span> pd.Categorical(plot_data_exp1[<span class="st">'Amount'</span>].replace({<span class="dv">16</span>: <span class="st">"16 Pellets"</span>, <span class="dv">32</span>: <span class="st">"32 Pellets"</span>}),</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>                                          categories<span class="op">=</span>[<span class="st">"32 Pellets"</span>, <span class="st">"16 Pellets"</span>])</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Define colors and markers</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>palette_fill <span class="op">=</span> {<span class="st">"16 Pellets"</span>: <span class="st">"#DD8452"</span>, <span class="st">"32 Pellets"</span>: <span class="st">"#4C72B0"</span>}</span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>palette_line <span class="op">=</span> {<span class="st">"16 Pellets"</span>: <span class="st">"#A65329"</span>, <span class="st">"32 Pellets"</span>: <span class="st">"#2E4A7F"</span>}</span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>markers <span class="op">=</span> {<span class="st">"16 Pellets"</span>: <span class="st">"v"</span>, <span class="st">"32 Pellets"</span>: <span class="st">"^"</span>}</span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>linestyles <span class="op">=</span> {<span class="st">"16 Pellets"</span>: <span class="st">"solid"</span>, <span class="st">"32 Pellets"</span>: (<span class="dv">0</span>, (<span class="dv">5</span>, <span class="dv">5</span>))} <span class="co"># 'solid' and 'dashed'</span></span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a><span class="co"># 1. Initialize the FacetGrid</span></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>g <span class="op">=</span> sns.FacetGrid(plot_data_exp1, col<span class="op">=</span><span class="st">"Subject"</span>, col_wrap<span class="op">=</span><span class="dv">3</span>, height<span class="op">=</span><span class="dv">4</span>, aspect<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a><span class="co"># 2. Map the scatterplot for the observed data (Rep == 0)</span></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>g.map_dataframe(sns.scatterplot, x<span class="op">=</span><span class="st">'OAs'</span>, y<span class="op">=</span><span class="st">'RSV'</span>, hue<span class="op">=</span><span class="st">'Amount'</span>, style<span class="op">=</span><span class="st">'Amount'</span>, s<span class="op">=</span><span class="dv">100</span>,</span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>                data<span class="op">=</span>plot_data_exp1[plot_data_exp1.Rep <span class="op">==</span> <span class="dv">0</span>],</span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>                palette<span class="op">=</span>palette_fill, markers<span class="op">=</span>markers,</span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>                hue_order<span class="op">=</span>[<span class="st">"32 Pellets"</span>, <span class="st">"16 Pellets"</span>], style_order<span class="op">=</span>[<span class="st">"32 Pellets"</span>, <span class="st">"16 Pellets"</span>])</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a><span class="co"># 3. Map the scatterplot for the replication data (Rep == 1, open symbols)</span></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a>g.map_dataframe(sns.scatterplot, x<span class="op">=</span><span class="st">'OAs'</span>, y<span class="op">=</span><span class="st">'RSV'</span>, style<span class="op">=</span><span class="st">'Amount'</span>, s<span class="op">=</span><span class="dv">100</span>,</span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>                data<span class="op">=</span>plot_data_exp1[plot_data_exp1.Rep <span class="op">==</span> <span class="dv">1</span>],</span>
+<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>                marker<span class="op">=</span><span class="st">'o'</span>, facecolors<span class="op">=</span><span class="st">'none'</span>, edgecolors<span class="op">=</span><span class="st">'black'</span>,</span>
+<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>                style_order<span class="op">=</span>[<span class="st">"32 Pellets"</span>, <span class="st">"16 Pellets"</span>], legend<span class="op">=</span><span class="va">False</span>)</span>
+<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a><span class="co"># 4. Iterate through axes to overlay prediction lines</span></span>
+<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> subject, ax <span class="kw">in</span> g.axes_dict.items():</span>
+<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>    line_data <span class="op">=</span> pred_curves_exp1[pred_curves_exp1.Subject <span class="op">==</span> subject]</span>
+<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>    sns.lineplot(</span>
+<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>        data<span class="op">=</span>line_data,</span>
+<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>        x<span class="op">=</span><span class="st">'OAs'</span>,</span>
+<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>        y<span class="op">=</span><span class="st">'.epred'</span>,</span>
+<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>        hue<span class="op">=</span><span class="st">'Amount'</span>,</span>
+<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>        style<span class="op">=</span><span class="st">'Amount'</span>,</span>
+<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>        ax<span class="op">=</span>ax,</span>
+<span id="cb9-47"><a href="#cb9-47" aria-hidden="true" tabindex="-1"></a>        palette<span class="op">=</span>palette_line,</span>
+<span id="cb9-48"><a href="#cb9-48" aria-hidden="true" tabindex="-1"></a>        hue_order<span class="op">=</span>[<span class="st">"32 Pellets"</span>, <span class="st">"16 Pellets"</span>],</span>
+<span id="cb9-49"><a href="#cb9-49" aria-hidden="true" tabindex="-1"></a>        style_order<span class="op">=</span>[<span class="st">"32 Pellets"</span>, <span class="st">"16 Pellets"</span>],</span>
+<span id="cb9-50"><a href="#cb9-50" aria-hidden="true" tabindex="-1"></a>        legend<span class="op">=</span><span class="va">False</span>  <span class="co"># Turn off legend for lines to avoid duplicates</span></span>
+<span id="cb9-51"><a href="#cb9-51" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb9-52"><a href="#cb9-52" aria-hidden="true" tabindex="-1"></a>    style_plot(ax) <span class="co"># Apply custom theme</span></span>
+<span id="cb9-53"><a href="#cb9-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-54"><a href="#cb9-54" aria-hidden="true" tabindex="-1"></a>g.set_titles(<span class="st">"</span><span class="sc">{col_name}</span><span class="st">"</span>)</span>
+<span id="cb9-55"><a href="#cb9-55" aria-hidden="true" tabindex="-1"></a>g.set_axis_labels(<span class="st">"Odds Against"</span>, <span class="st">"Mean Relative Subjective Value"</span>)</span>
+<span id="cb9-56"><a href="#cb9-56" aria-hidden="true" tabindex="-1"></a>g.add_legend(title<span class="op">=</span><span class="st">"Amount"</span>)</span>
+<span id="cb9-57"><a href="#cb9-57" aria-hidden="true" tabindex="-1"></a>g.<span class="bu">set</span>(ylim<span class="op">=</span>(<span class="op">-</span><span class="fl">0.05</span>, <span class="fl">1.05</span>), xlim<span class="op">=</span>(<span class="op">-</span><span class="fl">0.5</span>, <span class="fl">10.5</span>))</span>
+<span id="cb9-58"><a href="#cb9-58" aria-hidden="true" tabindex="-1"></a>plt.tight_layout()</span>
+<span id="cb9-59"><a href="#cb9-59" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_Py_files/figure-html/cell-6-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="95f049d6" class="cell">
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Experiment 1: Results and Amount Effect (Table 1 &amp; Figure 2 Replication) ---</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Calculate and Display R-squared ---</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"--- Experiment 1: Bayesian R-squared by Subject ---"</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>r2_16 <span class="op">=</span> calculate_r2_exp1(model_exp1_16, idata_exp1_16, data_exp1_16p)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>r2_32 <span class="op">=</span> calculate_r2_exp1(model_exp1_32, idata_exp1_32, data_exp1_32p)</span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>r2_table <span class="op">=</span> pd.DataFrame({<span class="st">'R2_16p'</span>: r2_16, <span class="st">'R2_32p'</span>: r2_32})</span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(r2_table)</span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">Median R2 (16 Pellets): </span><span class="sc">{</span>r2_16<span class="sc">.</span>median()<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="ss">f"Median R2 (32 Pellets): </span><span class="sc">{</span>r2_32<span class="sc">.</span>median()<span class="sc">:.3f}</span><span class="ss">"</span>)</span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Parameter Table (Replicates Table 1) ---</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>params_summary_exp1 <span class="op">=</span> pd.concat([get_param_summary(idata_exp1_16, <span class="dv">16</span>), get_param_summary(idata_exp1_32, <span class="dv">32</span>)])</span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>params_table_exp1 <span class="op">=</span> params_summary_exp1.pivot(index<span class="op">=</span>[<span class="st">'Subject'</span>, <span class="st">'Amount'</span>], columns<span class="op">=</span><span class="st">'Parameter'</span>, values<span class="op">=</span>[<span class="st">'mean'</span>, <span class="st">'sd'</span>])</span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">--- Parameter Estimates (Replicates Table 1) ---"</span>)</span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(params_table_exp1)</span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Amount Effect on AuC (GEE Model) ---</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">--- Amount Effect on AuC (GEE) ---"</span>)</span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>auc_data_exp1 <span class="op">=</span> auc_data[(auc_data.Experiment <span class="op">==</span> <span class="dv">1</span>) <span class="op">&amp;</span> (auc_data.Subject <span class="op">!=</span> <span class="st">'Mean'</span>)].copy()</span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>auc_data_exp1[<span class="st">'Amount_cat'</span>] <span class="op">=</span> auc_data_exp1[<span class="st">'Amount'</span>].astype(<span class="st">'category'</span>)</span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a><span class="co"># Use Generalized Estimating Equations (GEE) to account for repeated measures (by Subject)</span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a><span class="co"># This is a Python equivalent to R's glmmTMB/lme4 for this type of test.</span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a><span class="co"># We use a Binomial family as AuC is bounded [0, 1] (similar to Beta regression)</span></span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>gee_model <span class="op">=</span> smf.gee(</span>
+<span id="cb10-28"><a href="#cb10-28" aria-hidden="true" tabindex="-1"></a>    <span class="st">"AuC ~ C(Amount_cat, Treatment(reference=16))"</span>, </span>
+<span id="cb10-29"><a href="#cb10-29" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Subject"</span>,</span>
+<span id="cb10-30"><a href="#cb10-30" aria-hidden="true" tabindex="-1"></a>    data<span class="op">=</span>auc_data_exp1, </span>
+<span id="cb10-31"><a href="#cb10-31" aria-hidden="true" tabindex="-1"></a>    family<span class="op">=</span>sm.families.Binomial()</span>
+<span id="cb10-32"><a href="#cb10-32" aria-hidden="true" tabindex="-1"></a>).fit()</span>
+<span id="cb10-33"><a href="#cb10-33" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(gee_model.summary())</span>
+<span id="cb10-34"><a href="#cb10-34" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"No significant effect of Amount on AuC was found (p &gt; .05)."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Sampling: [RSV]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>--- Experiment 1: Bayesian R-squared by Subject ---</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Sampling: [RSV]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>         R2_16p  R2_32p
+Subject                
+P41       0.966   0.636
+P42       0.316   0.065
+P43       0.720   0.302
+P44       0.907   0.876
+P45       0.990   0.875
+P46       0.872   0.988
+P47       0.883   0.904
+P48       0.960   0.639
+Mean      0.976   0.973
+
+Median R2 (16 Pellets): 0.907
+Median R2 (32 Pellets): 0.875
+
+--- Parameter Estimates (Replicates Table 1) ---
+                 mean          sd      
+Parameter           h     s     h     s
+Subject Amount                         
+Mean    16      4.949 0.674 3.384 0.298
+        32      5.084 0.699 3.600 0.500
+P41     16      2.547 1.445 2.683 1.132
+        32      6.151 0.849 5.103 0.732
+P42     16     14.981 0.520 6.404 0.142
+        32     13.841 0.530 6.259 0.162
+P43     16      6.348 0.603 5.192 0.863
+        32      7.882 0.510 5.991 0.626
+P44     16      2.845 0.957 3.504 1.382
+        32      1.891 2.065 3.076 2.893
+P45     16      1.065 2.142 1.674 1.893
+        32      6.415 0.687 4.649 0.544
+P46     16      5.537 0.701 4.245 0.472
+        32      7.235 0.560 3.348 0.125
+P47     16      3.596 1.041 3.668 1.125
+        32      3.197 1.199 3.546 1.411
+P48     16     12.400 0.798 4.806 0.189
+        32     13.170 0.750 5.910 0.209
+
+--- Amount Effect on AuC (GEE) ---
+                               GEE Regression Results                              
+===================================================================================
+Dep. Variable:                         AuC   No. Observations:                   16
+Model:                                 GEE   No. clusters:                        8
+Method:                        Generalized   Min. cluster size:                   2
+                      Estimating Equations   Max. cluster size:                   2
+Family:                           Binomial   Mean cluster size:                 2.0
+Dependence structure:         Independence   Num. iterations:                     2
+Date:                     Fri, 31 Oct 2025   Scale:                           1.000
+Covariance type:                    robust   Time:                         15:48:05
+================================================================================================================
+                                                   coef    std err          z      P&gt;|z|      [0.025      0.975]
+----------------------------------------------------------------------------------------------------------------
+Intercept                                       -1.3017      0.161     -8.065      0.000      -1.618      -0.985
+C(Amount_cat, Treatment(reference=16))[T.32]     0.0431      0.057      0.757      0.449      -0.069       0.155
+==============================================================================
+Skew:                          0.2678   Kurtosis:                      -0.6966
+Centered skew:                 0.0000   Centered kurtosis:              1.1271
+==============================================================================
+
+No significant effect of Amount on AuC was found (p &gt; .05).</code></pre>
+</div>
+</div>
+</section>
+<section id="experiment-2-two-probabilistic-rewards" class="level2">
+<h2 class="anchored" data-anchor-id="experiment-2-two-probabilistic-rewards">Experiment 2: Two Probabilistic Rewards</h2>
+<p>In Experiment 2, the probabilities of both options were reduced by a common multiplier (1.0, 0.75, or 0.25), creating choices where both outcomes were probabilistic. This section fits the generalized hyperboloid model (Equation 2).</p>
+<div id="e484f123" class="cell" data-execution_count="17">
+<div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Experiment 2: Bayesian Model Fitting ---</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Fit all 6 models for Experiment 2 ---</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>filtered_data_exp2 <span class="op">=</span> combined_data[(combined_data.Experiment <span class="op">==</span> <span class="dv">2</span>) <span class="op">&amp;</span> (combined_data.Rep <span class="op">==</span> <span class="dv">0</span>)].copy()</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>filtered_data_exp2[<span class="st">'Subject'</span>] <span class="op">=</span> filtered_data_exp2[<span class="st">'Subject'</span>].cat.remove_unused_categories()</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Create dictionaries to store the fitted models and their inference data</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>idata_exp2 <span class="op">=</span> {}</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>models_exp2 <span class="op">=</span> {}</span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> amt <span class="kw">in</span> [<span class="dv">16</span>, <span class="dv">32</span>]:</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> mult <span class="kw">in</span> [<span class="fl">1.0</span>, <span class="fl">0.75</span>, <span class="fl">0.25</span>]:</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>        key <span class="op">=</span> <span class="ss">f"amt</span><span class="sc">{</span>amt<span class="sc">}</span><span class="ss">_mult</span><span class="sc">{</span><span class="bu">int</span>(mult<span class="op">*</span><span class="dv">100</span>)<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"Fitting </span><span class="sc">{</span>key<span class="sc">}</span><span class="ss">..."</span>)</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>        </span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Filter data for this specific condition</span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>        data_subset <span class="op">=</span> filtered_data_exp2[</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>            (filtered_data_exp2.Amount <span class="op">==</span> amt) <span class="op">&amp;</span> (filtered_data_exp2.Multiplier <span class="op">==</span> mult)</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>        ].copy()</span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>        data_subset[<span class="st">'Subject'</span>] <span class="op">=</span> data_subset[<span class="st">'Subject'</span>].cat.remove_unused_categories()</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Fit the model and store both idata and the model object</span></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>        idata_obj, model_obj <span class="op">=</span> fit_model_exp2(data_subset)</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>        idata_exp2[key] <span class="op">=</span> idata_obj</span>
+<span id="cb15-25"><a href="#cb15-25" aria-hidden="true" tabindex="-1"></a>        models_exp2[key] <span class="op">=</span> model_obj</span>
+<span id="cb15-26"><a href="#cb15-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb15-27"><a href="#cb15-27" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"Experiment 2 model fitting complete."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fitting amt16_mult100...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Initializing NUTS using jitter+adapt_diag...
+Multiprocess sampling (4 chains in 4 jobs)
+NUTS: [h, s, nu]
+Sampling 4 chains for 2_000 tune and 2_000 draw iterations (8_000 + 8_000 draws total) took 24 seconds.
+There were 39 divergences after tuning. Increase `target_accept` or reparameterize.
+Initializing NUTS using jitter+adapt_diag...</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fitting amt16_mult75...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Multiprocess sampling (4 chains in 4 jobs)
+NUTS: [h, s, nu]
+Sampling 4 chains for 2_000 tune and 2_000 draw iterations (8_000 + 8_000 draws total) took 15 seconds.
+There were 13 divergences after tuning. Increase `target_accept` or reparameterize.
+Initializing NUTS using jitter+adapt_diag...</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fitting amt16_mult25...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Multiprocess sampling (4 chains in 4 jobs)
+NUTS: [h, s, nu]
+Sampling 4 chains for 2_000 tune and 2_000 draw iterations (8_000 + 8_000 draws total) took 9 seconds.
+There were 116 divergences after tuning. Increase `target_accept` or reparameterize.
+Initializing NUTS using jitter+adapt_diag...</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fitting amt32_mult100...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Multiprocess sampling (4 chains in 4 jobs)
+NUTS: [h, s, nu]
+Sampling 4 chains for 2_000 tune and 2_000 draw iterations (8_000 + 8_000 draws total) took 23 seconds.
+There were 49 divergences after tuning. Increase `target_accept` or reparameterize.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fitting amt32_mult75...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Initializing NUTS using jitter+adapt_diag...
+Multiprocess sampling (4 chains in 4 jobs)
+NUTS: [h, s, nu]
+Sampling 4 chains for 2_000 tune and 2_000 draw iterations (8_000 + 8_000 draws total) took 9 seconds.
+There was 1 divergence after tuning. Increase `target_accept` or reparameterize.
+Initializing NUTS using jitter+adapt_diag...</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Fitting amt32_mult25...</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Multiprocess sampling (4 chains in 4 jobs)
+NUTS: [h, s, nu]
+Sampling 4 chains for 2_000 tune and 2_000 draw iterations (8_000 + 8_000 draws total) took 4 seconds.
+There were 2 divergences after tuning. Increase `target_accept` or reparameterize.</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>Experiment 2 model fitting complete.</code></pre>
+</div>
+</div>
+<div id="ffe87b4a" class="cell" data-execution_count="18">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Experiment 2: Plotting Results (Figures 3-5 Replication) ---</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Generate predictions for all 6 models ---</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>pred_curves_list_exp2 <span class="op">=</span> []</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (key, idata_obj) <span class="kw">in</span> idata_exp2.items():</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    amt <span class="op">=</span> <span class="dv">16</span> <span class="cf">if</span> <span class="st">'amt16'</span> <span class="kw">in</span> key <span class="cf">else</span> <span class="dv">32</span></span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>    mult <span class="op">=</span> <span class="fl">1.0</span> <span class="cf">if</span> <span class="st">'mult100'</span> <span class="kw">in</span> key <span class="cf">else</span> (<span class="fl">0.75</span> <span class="cf">if</span> <span class="st">'mult75'</span> <span class="kw">in</span> key <span class="cf">else</span> <span class="fl">0.25</span>)</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>    data_subset <span class="op">=</span> filtered_data_exp2[(filtered_data_exp2.Amount <span class="op">==</span> amt) <span class="op">&amp;</span> (filtered_data_exp2.Multiplier <span class="op">==</span> mult)]</span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>    pred_curves_list_exp2.append(get_predictions_exp2(idata_obj, amt, mult, data_subset))</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>pred_curves_exp2 <span class="op">=</span> pd.concat(pred_curves_list_exp2)</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Prepare data for plotting ---</span></span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate "Relative Odds Against" (Rel_OAs) for the x-axis</span></span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a><span class="co"># This normalizes the OAs across multiplier conditions</span></span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> calculate_rel_oas(row):</span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a>    prob <span class="op">=</span> <span class="dv">1</span> <span class="op">/</span> (row[<span class="st">'OAs'</span>] <span class="op">+</span> <span class="dv">1</span>)</span>
+<span id="cb29-18"><a href="#cb29-18" aria-hidden="true" tabindex="-1"></a>    rel_prob <span class="op">=</span> prob <span class="op">/</span> row[<span class="st">'Multiplier'</span>]</span>
+<span id="cb29-19"><a href="#cb29-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> (<span class="dv">1</span> <span class="op">-</span> rel_prob) <span class="op">/</span> rel_prob</span>
+<span id="cb29-20"><a href="#cb29-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-21"><a href="#cb29-21" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply to observed data</span></span>
+<span id="cb29-22"><a href="#cb29-22" aria-hidden="true" tabindex="-1"></a>plot_data_exp2 <span class="op">=</span> combined_data[combined_data.Experiment <span class="op">==</span> <span class="dv">2</span>].copy()</span>
+<span id="cb29-23"><a href="#cb29-23" aria-hidden="true" tabindex="-1"></a>plot_data_exp2[<span class="st">'Rel_OAs'</span>] <span class="op">=</span> plot_data_exp2.<span class="bu">apply</span>(calculate_rel_oas, axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb29-24"><a href="#cb29-24" aria-hidden="true" tabindex="-1"></a>plot_data_exp2[<span class="st">'Amount'</span>] <span class="op">=</span> pd.Categorical(plot_data_exp2[<span class="st">'Amount'</span>].replace({<span class="dv">16</span>: <span class="st">"16 Pellets"</span>, <span class="dv">32</span>: <span class="st">"32 Pellets"</span>}))</span>
+<span id="cb29-25"><a href="#cb29-25" aria-hidden="true" tabindex="-1"></a>plot_data_exp2[<span class="st">'Multiplier_Label'</span>] <span class="op">=</span> pd.Categorical(plot_data_exp2[<span class="st">'Multiplier'</span>].replace({<span class="fl">1.0</span>: <span class="st">"Multiplier 1.0"</span>, <span class="fl">0.75</span>: <span class="st">"Multiplier 0.75"</span>, <span class="fl">0.25</span>: <span class="st">"Multiplier 0.25"</span>}))</span>
+<span id="cb29-26"><a href="#cb29-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-27"><a href="#cb29-27" aria-hidden="true" tabindex="-1"></a><span class="co"># Apply to prediction data</span></span>
+<span id="cb29-28"><a href="#cb29-28" aria-hidden="true" tabindex="-1"></a>pred_curves_exp2[<span class="st">'Rel_OAs'</span>] <span class="op">=</span> pred_curves_exp2.<span class="bu">apply</span>(calculate_rel_oas, axis<span class="op">=</span><span class="dv">1</span>)</span>
+<span id="cb29-29"><a href="#cb29-29" aria-hidden="true" tabindex="-1"></a>pred_curves_exp2[<span class="st">'Amount'</span>] <span class="op">=</span> pd.Categorical(pred_curves_exp2[<span class="st">'Amount'</span>])</span>
+<span id="cb29-30"><a href="#cb29-30" aria-hidden="true" tabindex="-1"></a>pred_curves_exp2[<span class="st">'Multiplier_Label'</span>] <span class="op">=</span> pd.Categorical(pred_curves_exp2[<span class="st">'Multiplier'</span>].replace({<span class="fl">1.0</span>: <span class="st">"Multiplier 1.0"</span>, <span class="fl">0.75</span>: <span class="st">"Multiplier 0.75"</span>, <span class="fl">0.25</span>: <span class="st">"Multiplier 0.25"</span>}))</span>
+<span id="cb29-31"><a href="#cb29-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-32"><a href="#cb29-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-33"><a href="#cb29-33" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Create the FacetGrid Plot ---</span></span>
+<span id="cb29-34"><a href="#cb29-34" aria-hidden="true" tabindex="-1"></a>g <span class="op">=</span> sns.FacetGrid(plot_data_exp2, </span>
+<span id="cb29-35"><a href="#cb29-35" aria-hidden="true" tabindex="-1"></a>                  row<span class="op">=</span><span class="st">"Subject"</span>, col<span class="op">=</span><span class="st">"Multiplier_Label"</span>, </span>
+<span id="cb29-36"><a href="#cb29-36" aria-hidden="true" tabindex="-1"></a>                  height<span class="op">=</span><span class="fl">2.5</span>, aspect<span class="op">=</span><span class="fl">1.5</span>,</span>
+<span id="cb29-37"><a href="#cb29-37" aria-hidden="true" tabindex="-1"></a>                  sharex<span class="op">=</span><span class="va">True</span>, sharey<span class="op">=</span><span class="va">True</span>, </span>
+<span id="cb29-38"><a href="#cb29-38" aria-hidden="true" tabindex="-1"></a>                  row_order<span class="op">=</span>subject_levels) <span class="co"># Use the defined subject order</span></span>
+<span id="cb29-39"><a href="#cb29-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-40"><a href="#cb29-40" aria-hidden="true" tabindex="-1"></a><span class="co"># Map the scatterplot of observed data</span></span>
+<span id="cb29-41"><a href="#cb29-41" aria-hidden="true" tabindex="-1"></a>g.map_dataframe(sns.scatterplot, x<span class="op">=</span><span class="st">'Rel_OAs'</span>, y<span class="op">=</span><span class="st">'RSV'</span>, hue<span class="op">=</span><span class="st">'Amount'</span>, style<span class="op">=</span><span class="st">'Amount'</span>, s<span class="op">=</span><span class="dv">50</span>,</span>
+<span id="cb29-42"><a href="#cb29-42" aria-hidden="true" tabindex="-1"></a>                palette<span class="op">=</span>palette_fill, markers<span class="op">=</span>markers,</span>
+<span id="cb29-43"><a href="#cb29-43" aria-hidden="true" tabindex="-1"></a>                hue_order<span class="op">=</span>[<span class="st">"32 Pellets"</span>, <span class="st">"16 Pellets"</span>])</span>
+<span id="cb29-44"><a href="#cb29-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-45"><a href="#cb29-45" aria-hidden="true" tabindex="-1"></a><span class="co"># Iterate over axes to overlay prediction lines</span></span>
+<span id="cb29-46"><a href="#cb29-46" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (row_val, col_val), ax <span class="kw">in</span> g.axes_dict.items():</span>
+<span id="cb29-47"><a href="#cb29-47" aria-hidden="true" tabindex="-1"></a>    line_data <span class="op">=</span> pred_curves_exp2[(pred_curves_exp2.Subject <span class="op">==</span> row_val) <span class="op">&amp;</span> (pred_curves_exp2.Multiplier_Label <span class="op">==</span> col_val)]</span>
+<span id="cb29-48"><a href="#cb29-48" aria-hidden="true" tabindex="-1"></a>    sns.lineplot(</span>
+<span id="cb29-49"><a href="#cb29-49" aria-hidden="true" tabindex="-1"></a>        data<span class="op">=</span>line_data,</span>
+<span id="cb29-50"><a href="#cb29-50" aria-hidden="true" tabindex="-1"></a>        x<span class="op">=</span><span class="st">'Rel_OAs'</span>,</span>
+<span id="cb29-51"><a href="#cb29-51" aria-hidden="true" tabindex="-1"></a>        y<span class="op">=</span><span class="st">'.epred'</span>,</span>
+<span id="cb29-52"><a href="#cb29-52" aria-hidden="true" tabindex="-1"></a>        hue<span class="op">=</span><span class="st">'Amount'</span>,</span>
+<span id="cb29-53"><a href="#cb29-53" aria-hidden="true" tabindex="-1"></a>        style<span class="op">=</span><span class="st">'Amount'</span>,</span>
+<span id="cb29-54"><a href="#cb29-54" aria-hidden="true" tabindex="-1"></a>        ax<span class="op">=</span>ax,</span>
+<span id="cb29-55"><a href="#cb29-55" aria-hidden="true" tabindex="-1"></a>        palette<span class="op">=</span>palette_line,</span>
+<span id="cb29-56"><a href="#cb29-56" aria-hidden="true" tabindex="-1"></a>        hue_order<span class="op">=</span>[<span class="st">"32 Pellets"</span>, <span class="st">"16 Pellets"</span>],</span>
+<span id="cb29-57"><a href="#cb29-57" aria-hidden="true" tabindex="-1"></a>        legend<span class="op">=</span><span class="va">False</span></span>
+<span id="cb29-58"><a href="#cb29-58" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb29-59"><a href="#cb29-59" aria-hidden="true" tabindex="-1"></a>    style_plot(ax) <span class="co"># Apply custom theme</span></span>
+<span id="cb29-60"><a href="#cb29-60" aria-hidden="true" tabindex="-1"></a>    ax.set_xticks(<span class="bu">range</span>(<span class="dv">0</span>, <span class="dv">5</span>, <span class="dv">1</span>)) <span class="co"># Set x-ticks 0, 1, 2, 3, 4</span></span>
+<span id="cb29-61"><a href="#cb29-61" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-62"><a href="#cb29-62" aria-hidden="true" tabindex="-1"></a>g.set_titles(row_template<span class="op">=</span><span class="st">"</span><span class="sc">{row_name}</span><span class="st">"</span>, col_template<span class="op">=</span><span class="st">"</span><span class="sc">{col_name}</span><span class="st">"</span>)</span>
+<span id="cb29-63"><a href="#cb29-63" aria-hidden="true" tabindex="-1"></a>g.set_axis_labels(<span class="st">"Relative Odds Against"</span>, <span class="st">"Mean RSV"</span>)</span>
+<span id="cb29-64"><a href="#cb29-64" aria-hidden="true" tabindex="-1"></a>g.add_legend(title<span class="op">=</span><span class="st">"Amount"</span>)</span>
+<span id="cb29-65"><a href="#cb29-65" aria-hidden="true" tabindex="-1"></a>g.<span class="bu">set</span>(ylim<span class="op">=</span>(<span class="op">-</span><span class="fl">0.05</span>, <span class="fl">1.05</span>), xlim<span class="op">=</span>(<span class="op">-</span><span class="fl">0.1</span>, <span class="fl">4.1</span>))</span>
+<span id="cb29-66"><a href="#cb29-66" aria-hidden="true" tabindex="-1"></a>g.fig.tight_layout()</span>
+<span id="cb29-67"><a href="#cb29-67" aria-hidden="true" tabindex="-1"></a>plt.show()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="analysis_Py_files/figure-html/cell-9-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<div id="e2b38369" class="cell" data-execution_count="20">
+<div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Experiment 2: Results and Amount Effect (Table 2 Replication) ---</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Calculate R2 for all conditions ---</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>r2_list_exp2 <span class="op">=</span> []</span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (key, model_obj) <span class="kw">in</span> models_exp2.items():</span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    idata_obj <span class="op">=</span> idata_exp2[key]</span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>    amt <span class="op">=</span> <span class="dv">16</span> <span class="cf">if</span> <span class="st">'amt16'</span> <span class="kw">in</span> key <span class="cf">else</span> <span class="dv">32</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>    mult <span class="op">=</span> <span class="fl">1.0</span> <span class="cf">if</span> <span class="st">'mult100'</span> <span class="kw">in</span> key <span class="cf">else</span> (<span class="fl">0.75</span> <span class="cf">if</span> <span class="st">'mult75'</span> <span class="kw">in</span> key <span class="cf">else</span> <span class="fl">0.25</span>)</span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    data_subset <span class="op">=</span> filtered_data_exp2[(filtered_data_exp2.Amount <span class="op">==</span> amt) <span class="op">&amp;</span> (filtered_data_exp2.Multiplier <span class="op">==</span> mult)]</span>
+<span id="cb30-10"><a href="#cb30-10" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb30-11"><a href="#cb30-11" aria-hidden="true" tabindex="-1"></a>    r2_series <span class="op">=</span> calculate_r2_exp2(model_obj, idata_obj, data_subset)</span>
+<span id="cb30-12"><a href="#cb30-12" aria-hidden="true" tabindex="-1"></a>    r2_df <span class="op">=</span> r2_series.reset_index(name<span class="op">=</span><span class="st">'R2'</span>)</span>
+<span id="cb30-13"><a href="#cb30-13" aria-hidden="true" tabindex="-1"></a>    r2_df[<span class="st">'Amount'</span>] <span class="op">=</span> amt</span>
+<span id="cb30-14"><a href="#cb30-14" aria-hidden="true" tabindex="-1"></a>    r2_df[<span class="st">'Multiplier'</span>] <span class="op">=</span> mult</span>
+<span id="cb30-15"><a href="#cb30-15" aria-hidden="true" tabindex="-1"></a>    r2_list_exp2.append(r2_df)</span>
+<span id="cb30-16"><a href="#cb30-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-17"><a href="#cb30-17" aria-hidden="true" tabindex="-1"></a>r2_table_exp2 <span class="op">=</span> pd.concat(r2_list_exp2)</span>
+<span id="cb30-18"><a href="#cb30-18" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"--- Experiment 2: Bayesian R-squared by Condition ---"</span>)</span>
+<span id="cb30-19"><a href="#cb30-19" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(r2_table_exp2.pivot_table(index<span class="op">=</span>[<span class="st">'Subject'</span>, <span class="st">'Amount'</span>], columns<span class="op">=</span><span class="st">'Multiplier'</span>, values<span class="op">=</span><span class="st">'R2'</span>))</span>
+<span id="cb30-20"><a href="#cb30-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-21"><a href="#cb30-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-22"><a href="#cb30-22" aria-hidden="true" tabindex="-1"></a><span class="co"># --- Test for Amount Effect on AUC ---</span></span>
+<span id="cb30-23"><a href="#cb30-23" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"</span><span class="ch">\n</span><span class="st">--- Experiment 2: Amount Effect on AuC by Multiplier (GEE) ---"</span>)</span>
+<span id="cb30-24"><a href="#cb30-24" aria-hidden="true" tabindex="-1"></a>auc_data_exp2 <span class="op">=</span> auc_data[(auc_data.Experiment <span class="op">==</span> <span class="dv">2</span>) <span class="op">&amp;</span> (auc_data.Subject <span class="op">!=</span> <span class="st">'Mean'</span>)].copy()</span>
+<span id="cb30-25"><a href="#cb30-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-26"><a href="#cb30-26" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> m <span class="kw">in</span> [<span class="fl">1.0</span>, <span class="fl">0.75</span>, <span class="fl">0.25</span>]:</span>
+<span id="cb30-27"><a href="#cb30-27" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(<span class="ss">f"</span><span class="ch">\n</span><span class="ss">--- Multiplier: </span><span class="sc">{</span>m<span class="sc">}</span><span class="ss"> ---"</span>)</span>
+<span id="cb30-28"><a href="#cb30-28" aria-hidden="true" tabindex="-1"></a>    data_subset <span class="op">=</span> auc_data_exp2[auc_data_exp2.Multiplier <span class="op">==</span> m].copy()</span>
+<span id="cb30-29"><a href="#cb30-29" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb30-30"><a href="#cb30-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> data_subset[<span class="st">'Amount'</span>].nunique() <span class="op">&gt;</span> <span class="dv">1</span>:</span>
+<span id="cb30-31"><a href="#cb30-31" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Use GEE to test for an effect of Amount, clustering by Subject</span></span>
+<span id="cb30-32"><a href="#cb30-32" aria-hidden="true" tabindex="-1"></a>        gee_model <span class="op">=</span> smf.gee(</span>
+<span id="cb30-33"><a href="#cb30-33" aria-hidden="true" tabindex="-1"></a>            <span class="st">"AuC ~ C(Amount, Treatment(reference=16))"</span>, </span>
+<span id="cb30-34"><a href="#cb30-34" aria-hidden="true" tabindex="-1"></a>            <span class="st">"Subject"</span>,</span>
+<span id="cb30-35"><a href="#cb30-35" aria-hidden="true" tabindex="-1"></a>            data<span class="op">=</span>data_subset, </span>
+<span id="cb30-36"><a href="#cb30-36" aria-hidden="true" tabindex="-1"></a>            family<span class="op">=</span>sm.families.Binomial()</span>
+<span id="cb30-37"><a href="#cb30-37" aria-hidden="true" tabindex="-1"></a>        ).fit()</span>
+<span id="cb30-38"><a href="#cb30-38" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(gee_model.summary())</span>
+<span id="cb30-39"><a href="#cb30-39" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span>:</span>
+<span id="cb30-40"><a href="#cb30-40" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="ss">f"Only one amount level present for Multiplier </span><span class="sc">{</span>m<span class="sc">}</span><span class="ss">; cannot perform comparison."</span>)</span>
+<span id="cb30-41"><a href="#cb30-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb30-42"><a href="#cb30-42" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(<span class="st">"No significant effect of Amount on AuC was found in any condition (all p &gt; .05)."</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Sampling: [RSV]
+Sampling: [RSV]
+Sampling: [RSV]
+Sampling: [RSV]
+Sampling: [RSV]
+Sampling: [RSV]</code></pre>
+</div>
+<div class="cell-output cell-output-stdout">
+<pre><code>--- Experiment 2: Bayesian R-squared by Condition ---
+Multiplier      0.250  0.750  1.000
+Subject Amount                     
+P41     16      0.990  0.985  0.950
+        32      0.961  0.981  0.958
+P42     16      0.673  0.016  0.801
+        32      0.852  0.727  0.812
+P43     16      0.887  0.993    NaN
+        32        NaN  0.457  0.995
+P44     16      0.739  0.869  0.956
+        32      0.753  0.757  0.902
+P45     16      0.612  0.569  0.911
+        32        NaN  0.704  0.387
+P46     16      0.903  0.957  0.959
+        32      0.589  0.921  0.890
+P47     16      0.989  0.759  0.988
+P48     16        NaN    NaN  0.544
+        32        NaN    NaN  0.990
+Mean    16      0.941  0.962  0.998
+        32      0.434  0.861  0.987
+
+--- Experiment 2: Amount Effect on AuC by Multiplier (GEE) ---
+
+--- Multiplier: 1.0 ---
+                               GEE Regression Results                              
+===================================================================================
+Dep. Variable:                         AuC   No. Observations:                   15
+Model:                                 GEE   No. clusters:                        8
+Method:                        Generalized   Min. cluster size:                   1
+                      Estimating Equations   Max. cluster size:                   2
+Family:                           Binomial   Mean cluster size:                 1.9
+Dependence structure:         Independence   Num. iterations:                     2
+Date:                     Fri, 31 Oct 2025   Scale:                           1.000
+Covariance type:                    robust   Time:                         15:51:50
+============================================================================================================
+                                               coef    std err          z      P&gt;|z|      [0.025      0.975]
+------------------------------------------------------------------------------------------------------------
+Intercept                                   -0.8712      0.131     -6.662      0.000      -1.128      -0.615
+C(Amount, Treatment(reference=16))[T.32]     0.3477      0.222      1.567      0.117      -0.087       0.783
+==============================================================================
+Skew:                          0.6342   Kurtosis:                       0.1907
+Centered skew:                 0.0000   Centered kurtosis:             -0.5956
+==============================================================================
+
+--- Multiplier: 0.75 ---
+                               GEE Regression Results                              
+===================================================================================
+Dep. Variable:                         AuC   No. Observations:                   15
+Model:                                 GEE   No. clusters:                        8
+Method:                        Generalized   Min. cluster size:                   1
+                      Estimating Equations   Max. cluster size:                   2
+Family:                           Binomial   Mean cluster size:                 1.9
+Dependence structure:         Independence   Num. iterations:                     2
+Date:                     Fri, 31 Oct 2025   Scale:                           1.000
+Covariance type:                    robust   Time:                         15:51:50
+============================================================================================================
+                                               coef    std err          z      P&gt;|z|      [0.025      0.975]
+------------------------------------------------------------------------------------------------------------
+Intercept                                   -0.6544      0.184     -3.550      0.000      -1.016      -0.293
+C(Amount, Treatment(reference=16))[T.32]    -0.2580      0.163     -1.579      0.114      -0.578       0.062
+==============================================================================
+Skew:                          0.2238   Kurtosis:                       0.5872
+Centered skew:                 0.0000   Centered kurtosis:             -0.1296
+==============================================================================
+
+--- Multiplier: 0.25 ---
+                               GEE Regression Results                              
+===================================================================================
+Dep. Variable:                         AuC   No. Observations:                   15
+Model:                                 GEE   No. clusters:                        8
+Method:                        Generalized   Min. cluster size:                   1
+                      Estimating Equations   Max. cluster size:                   2
+Family:                           Binomial   Mean cluster size:                 1.9
+Dependence structure:         Independence   Num. iterations:                     2
+Date:                     Fri, 31 Oct 2025   Scale:                           1.000
+Covariance type:                    robust   Time:                         15:51:50
+============================================================================================================
+                                               coef    std err          z      P&gt;|z|      [0.025      0.975]
+------------------------------------------------------------------------------------------------------------
+Intercept                                   -0.5366      0.145     -3.690      0.000      -0.822      -0.252
+C(Amount, Treatment(reference=16))[T.32]    -0.0279      0.151     -0.184      0.854      -0.324       0.268
+==============================================================================
+Skew:                         -0.1027   Kurtosis:                      -0.7324
+Centered skew:                -0.0000   Centered kurtosis:             -1.3194
+==============================================================================
+No significant effect of Amount on AuC was found in any condition (all p &gt; .05).</code></pre>
+</div>
+</div>
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+        const codeEl = trigger.previousElementSibling.cloneNode(true);
+        for (const childEl of codeEl.children) {
+          if (isCodeAnnotation(childEl)) {
+            childEl.remove();
+          }
+        }
+        return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
