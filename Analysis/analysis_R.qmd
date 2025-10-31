@@ -9,6 +9,9 @@ format:
     self-contained: true
     theme: cosmo
     mainfont: "Garamond"
+execute:
+  warning: false
+  message: false
 engine: knitr
 ---
 
@@ -23,14 +26,12 @@ The analysis uses Bayesian nonlinear multilevel models via `brms` to fit a hyper
 The data for this study are publicly available on the Open Science Framework at: <https://osf.io/scwg3/>.
 
 This Quarto document is structured as follows:
+
 1.  **Setup**: Loads all required packages, sets global options, defines custom functions, and processes the raw data.
 2.  **Experiment 1**: Fits and visualizes the models for choices between certain and probabilistic rewards.
 3.  **Experiment 2**: Fits and visualizes the generalized models for choices between two probabilistic rewards.
 
 ```{r setup}
-#| message: false
-#| warning: false
-
 # This chunk sets up the global environment, loads all required packages,
 # and processes the raw data into analysis-ready dataframes.
 
@@ -86,9 +87,8 @@ calculate_AuC <- function(x, y) {
 
 # --- 3. LOAD RAW DATA ---
 # Load the data files from the OSF repository folder.
-setwd(here::here())
-raw_data_exp1 <- read_csv("R code/OSF/PigeonPD_Exp1.csv")
-raw_data_exp2 <- read_csv("R code/OSF/PigeonPD_Exp2.csv")
+raw_data_exp1 <- read_csv("PigeonPD_Exp1.csv")
+raw_data_exp2 <- read_csv("PigeonPD_Exp2.csv")
 
 # --- 4. PROCESS EXPERIMENT 1 DATA ---
 # Transform raw data into an analysis-ready format.
@@ -169,10 +169,6 @@ auc_data <- combined_data |>
 In Experiment 1, pigeons chose between a smaller, certain reinforcer and a larger, probabilistic reinforcer. The following section fits the hyperboloid discounting model (Equation 1 from the paper) to the data for each amount (16 and 32 pellets).
 
 ```{r exp1_mod}
-#| message: false
-#| warning: false
-
-setwd(here::here())
 # --- 1. Define Bayesian Nonlinear Model (Exp 1) ---
 # We fit the hyperboloid model: RSV = 1 / (1 + b * OAs)^s
 # We use a logit-transformed formula because the 'beta_family()' in brms
@@ -206,7 +202,7 @@ model_exp1_16p <- brm(
   iter = 4000, warmup = 2000, chains = 4, cores = 4, refresh = 0,
   backend = "cmdstanr", 
   control = list(adapt_delta = 0.95, max_treedepth = 10),
-  file = "R Code/01-13-25/Model/bf_mod1.rds" # Cache model fit
+  file = "rds/bf_mod1.rds" # Cache model fit
 )
 
 # --- 4. Fit Model for 32-Pellet Amount ---
@@ -218,7 +214,7 @@ model_exp1_32p <- brm(
   iter = 4000, warmup = 2000, chains = 4, cores = 4, refresh = 0,
   backend = "cmdstanr", 
   control = list(adapt_delta = 0.95, max_treedepth = 10),
-  file = "R Code/01-13-25/Model/bf_mod2.rds" # Cache model fit
+  file = "rds/bf_mod2.rds" # Cache model fit
 )
 
 # --- 5. Generate Predictions from Posterior ---
@@ -271,11 +267,7 @@ The table below replicates the key findings from Table 1 in the paper, showing t
 
 The plot replicates Figure 2, showing the difference in AuC between the 16- and 32-pellet conditions for each pigeon.
 
-
 ```{r exp1_tab}
-#| message: false
-#| warning: false
-
 # --- 1. Calculate Bayesian R-squared ---
 # This approach calculates the variance in the median posterior predictions
 # relative to the variance in the observed data.
@@ -368,12 +360,7 @@ filter(auc_data, Experiment == 1 & Subject != "Mean") |>
 
 In Experiment 2, the probabilities of both options were reduced by a common multiplier (1.0, 0.75, or 0.25), creating choices where both outcomes were probabilistic. The analysis fits a generalized hyperboloid model (Equation 2 from the paper) to the data from each condition.
 
-
 ```{r exp2_mod}
-#| message: false
-#| warning: false
-
-setwd(here::here())
 # --- 1. Define Bayesian Nonlinear Model (Exp 2) ---
 # This is the generalized hyperboloid model (Equation 2):
 # RSV = ((1 + b * OAs_Sm)^s) / ((1 + b * OAs)^s)
@@ -404,14 +391,14 @@ fit_brm_model_exp2 <- function(data_filter, file_name) {
 filtered_data_exp2 <- filter(combined_data, Experiment == 2 & Rep == 0)
 
 # 16-Pellet Models
-model_exp2_16p_m100 <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 16, Multiplier == 1.00), "R Code/01-13-25/Model/bf_mod3a.rds")
-model_exp2_16p_m75  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 16, Multiplier == 0.75), "R Code/01-13-25/Model/bf_mod3b.rds")
-model_exp2_16p_m25  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 16, Multiplier == 0.25), "R Code/01-13-25/Model/bf_mod3c.rds")
+model_exp2_16p_m100 <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 16, Multiplier == 1.00), "rds/bf_mod3a.rds")
+model_exp2_16p_m75  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 16, Multiplier == 0.75), "rds/bf_mod3b.rds")
+model_exp2_16p_m25  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 16, Multiplier == 0.25), "rds/bf_mod3c.rds")
 
 # 32-Pellet Models
-model_exp2_32p_m100 <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 32, Multiplier == 1.00), "R Code/01-13-25/Model/bf_mod4a.rds")
-model_exp2_32p_m75  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 32, Multiplier == 0.75), "R Code/01-13-25/Model/bf_mod4b.rds")
-model_exp2_32p_m25  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 32, Multiplier == 0.25), "R Code/01-13-25/Model/bf_mod4c.rds")
+model_exp2_32p_m100 <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 32, Multiplier == 1.00), "rds/bf_mod4a.rds")
+model_exp2_32p_m75  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 32, Multiplier == 0.75), "rds/bf_mod4b.rds")
+model_exp2_32p_m25  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 32, Multiplier == 0.25), "rds/bf_mod4c.rds")
 ```
 
 ---
@@ -419,9 +406,6 @@ model_exp2_32p_m25  <- fit_brm_model_exp2(filter(filtered_data_exp2, Amount == 3
 The plots below replicate Figures 3, 4, and 5 from the paper, showing the discounting curves for each of the three multiplier conditions. The x-axis is "Relative Odds Against," which is the odds against for the larger, less probable option.
 
 ```{r exp2_fig}
-#| message: false
-#| warning: false
-
 # --- 1. Create a Wrapper Function for Predictions ---
 generate_pred_curves_exp2 <- function(model, data_filter) {
   # Remove unused factor levels (like P47) from the filtered data
@@ -510,9 +494,6 @@ The table below replicates the key findings from Table 2 in the paper, showing A
 
 
 ```{r exp2_tab}
-#| message: false
-#| warning: false
-
 # --- 1. Calculate Bayesian R-squared ---
 filtered_data_exp2 <- filter(combined_data, Experiment == 2 & Rep == 0)
 r2_data_exp2 <- bind_rows(

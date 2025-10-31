@@ -28,15 +28,15 @@ The project materials are organized into the following folders:
 
 ---
 
-## Methodology Snapshot
+## Methodological Approach
 
-This project showcases advanced statistical modeling techniques applied to behavioral data:
+The analysis employs several advanced statistical techniques to model the behavioral data from both experiments:
 
-* **Bayesian Nonlinear Multilevel Models**: Custom hyperboloid discounting functions (both standard and generalized for Experiment 2) were implemented within a Bayesian framework to estimate individual subject parameters (`b` and `s`) while accounting for the data structure.
-* **Beta Regression**: Used as the observation model (`family = beta_family()`) to appropriately handle the relative subjective value data, which are proportions bounded between 0 and 1.
-* **Posterior Predictive Checks & R-squared**: Bayesian R-squared was calculated based on the posterior predictive distribution to assess model fit at the subject level. Posterior predictions were used to generate model-based discounting curves.
-* **Area Under the Curve (AuC)**: Calculated as a theory-neutral measure of discounting to compare the effect of reward magnitude across conditions.
-* **Generalized Linear Mixed Models / GEE**: `glmmTMB` (R) and `statsmodels.GEE` (Python) were used to test for the effect of reward amount on AuC while accounting for repeated measures within subjects.
+* **Bayesian Nonlinear Multilevel Models**: Custom hyperboloid discounting functions (both a standard version for Experiment 1 and a generalized version for Experiment 2) were implemented within a Bayesian hierarchical framework. This approach estimates individual subject parameters while appropriately accounting for the repeated-measures data structure.
+* **Beta Regression**: A beta distribution was used as the likelihood in the Bayesian models to correctly handle the relative subjective value data, which are proportions bounded between 0 and 1.
+* **Model Validation**: Bayesian R-squared was calculated from the posterior predictive distribution to assess model fit at the subject level. Posterior predictions were also used to generate the model-based discounting curves shown in the figures.
+* **Atheoretical Analysis**: The Area under the Curve (AuC) was calculated as a theory-neutral measure of discounting to provide a complementary analysis of the effect of reward magnitude.
+* **Hypothesis Testing**: A generalized linear mixed model (in R) and a Generalized Estimating Equations (GEE) model (in Python) were used to formally test for the effect of reward amount on AuC while accounting for the non-independence of observations within subjects.
 
 ---
 
