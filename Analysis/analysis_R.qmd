@@ -35,9 +35,6 @@ This Quarto document is structured as follows:
 # This chunk sets up the global environment, loads all required packages,
 # and processes the raw data into analysis-ready dataframes.
 
-# Set global chunk options to suppress all messages and warnings for a clean HTML output
-knitr::opts_chunk$set(message = FALSE, warning = FALSE, error = FALSE)
-
 # --- SETUP: PACKAGES, OPTIONS, AND FUNCTIONS ---
 
 # --- 1. LOAD PACKAGES ---
