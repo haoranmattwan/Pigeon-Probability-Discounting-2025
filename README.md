@@ -78,11 +78,9 @@ $$
 
 where $X$ is the odds against receipt of the probabilistic reinforcer, $b$ is the discounting-rate parameter, and $s$ is a scaling parameter. Experiment 2 uses the generalized form
 
-$$
 \frac{A_{\mathrm{smaller}}}{A_{\mathrm{larger}}}
 =
 \left(\frac{1+bX_{\mathrm{smaller}}}{1+bX_{\mathrm{larger}}}\right)^s.
-$$
 
 The published Bayesian curve-fitting analyses used beta likelihoods, positive Normal(1, 10) priors for $b$ and $s$, four chains, 2,000 warmup iterations, and 2,000 retained iterations per chain. Area under the empirical curve (AUC) provides a model-free summary of discounting; the confirmatory R analysis tests amount effects with mixed-effects beta regression. The article reports R 4.2.1; `renv.lock` records the later R 4.4.1 replication environment maintained by this repository.
 
