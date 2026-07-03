@@ -1,17 +1,78 @@
+# Research data (authoritative copies are on OSF)
+/data/*
+!/data/README.md
+**/PigeonPD_Exp*.csv
+**/raw_dat*.csv
+**/raw data/
+**/raw dat/
+*.sav
+*.por
+*.dta
+
+# Private research archive
+/Manuscript/
+/Drafts/
+/Private/
+/Correspondence/
+/Luis/
+/Literature/
+/Receipts/
+/Receipt/
+/Qualtrics/
+/R Code/
+*.qsf
+*Qualtrics*.csv
+*Receipt*/
+*receipt*/
+*.doc
+*.docx
+*.xlsx
+
+# Publisher PDFs and local reference copies
+/Oliveira et al., 2025.pdf
+
+# Generated analyses, models, figures, and reports
+/outputs/
+/output/
+/results/
+/Figure/
+/Analysis/rds/
+/Analysis/*.html
+/Analysis/*_files/
+/Analysis/.quarto/
+/.quarto/
+/.cache/
+/tmp/
+*_cache/
+*_files/
+*.log
+*.aux
+*.synctex.gz
+
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 .ipynb_checkpoints/
 .venv/
+venv/
 env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 
-# R
+# R and RStudio
 .Rhistory
 .RData
+.Ruserdata
 .Rproj.user/
+*.Rproj
 renv/library/
 renv/staging/
+renv/python/
 
-# OS / Editor specific
+# Editors and operating systems
 .DS_Store
+._*
 .vscode/
+.idea/
+*~

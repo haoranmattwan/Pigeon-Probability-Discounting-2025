@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "Please cite both the article and this software repository."
+title: "Reproducible analyses for Discounting of Probabilistic Food Reinforcement by Pigeons"
+type: software
+authors:
+  - family-names: Wan
+    given-names: Haoran
+    orcid: "https://orcid.org/0000-0002-3434-3146"
+repository-code: "https://github.com/haoranmattwan/Pigeon-Probability-Discounting-2025"
+license: MIT
+date-released: 2025-01-01
+preferred-citation:
+  type: article
+  title: "Discounting of probabilistic food reinforcement by pigeons"
+  authors:
+    - family-names: Oliveira
+      given-names: Luís
+    - family-names: Green
+      given-names: Leonard
+      orcid: "https://orcid.org/0000-0003-1555-5757"
+    - family-names: Myerson
+      given-names: Joel
+    - family-names: Wan
+      given-names: Haoran
+      orcid: "https://orcid.org/0000-0002-3434-3146"
+  journal: "Journal of the Experimental Analysis of Behavior"
+  volume: 124
+  issue: 1
+  year: 2025
+  doi: "10.1002/jeab.70042"
